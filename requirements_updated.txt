@@ -1,0 +1,49 @@
+# Updated Requirements.txt based on code analysis
+# Generated on September 1, 2025
+
+# Core FastAPI dependencies
+fastapi>=0.115.0
+uvicorn>=0.32.0
+requests>=2.32.3
+pydantic>=2.9.0
+python-dotenv>=1.0.1
+
+# Redis for caching and session management
+redis>=5.0.1
+
+# AI Agent dependencies
+openai>=1.0.0
+# Removed: langchain (not currently used in codebase)
+# Removed: langchain-openai (not currently used in codebase)
+
+# Observability and monitoring
+langfuse>=2.0.0
+
+# Data processing and scientific computing
+numpy>=1.20.0
+pandas>=1.5.0
+# Removed: pyarrow (pandas optional dependency, not directly used)
+
+# Location processing
+geopy>=2.3.0
+
+# Google Maps API integration
+googlemaps>=4.7.0
+
+# Text processing and normalization
+unidecode>=1.3.0
+
+# Machine Learning (optional - for enhanced commune matching)
+sentence-transformers>=2.0.0
+
+# Dataset management
+kagglehub>=0.1.0
+
+# Testing
+pytest>=7.0.0
+
+# Development dependencies (optional)
+# Add these if needed for development:
+# black>=22.0.0          # Code formatting
+# flake8>=4.0.0          # Linting
+# mypy>=0.991           # Type checking

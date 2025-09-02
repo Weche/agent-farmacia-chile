@@ -1,0 +1,328 @@
+/* 
+ * Pharmacy Finder - Dual Theme System
+ * Netflix/YouTube-inspired Design with Light/Dark modes
+ * Created: August 30, 2025
+ */
+
+:root {
+  /* Theme transition settings */
+  --theme-transition-duration: 0.3s;
+  --theme-transition-timing: cubic-bezier(0.4, 0, 0.2, 1);
+  
+  /* Typography */
+  --font-primary: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  --font-display: 'Inter', sans-serif;
+  --font-mono: 'Fira Code', 'Monaco', 'Consolas', monospace;
+  
+  /* Font sizes */
+  --text-xs: 0.75rem;    /* 12px */
+  --text-sm: 0.875rem;   /* 14px */
+  --text-base: 1rem;     /* 16px */
+  --text-lg: 1.125rem;   /* 18px */
+  --text-xl: 1.25rem;    /* 20px */
+  --text-2xl: 1.5rem;    /* 24px */
+  --text-3xl: 1.875rem;  /* 30px */
+  --text-4xl: 2.25rem;   /* 36px */
+  --text-5xl: 3rem;      /* 48px */
+  
+  /* Spacing */
+  --space-1: 0.25rem;    /* 4px */
+  --space-2: 0.5rem;     /* 8px */
+  --space-3: 0.75rem;    /* 12px */
+  --space-4: 1rem;       /* 16px */
+  --space-5: 1.25rem;    /* 20px */
+  --space-6: 1.5rem;     /* 24px */
+  --space-8: 2rem;       /* 32px */
+  --space-10: 2.5rem;    /* 40px */
+  --space-12: 3rem;      /* 48px */
+  --space-16: 4rem;      /* 64px */
+  --space-20: 5rem;      /* 80px */
+  
+  /* Border radius */
+  --radius-sm: 0.375rem;  /* 6px */
+  --radius-md: 0.5rem;    /* 8px */
+  --radius-lg: 0.75rem;   /* 12px */
+  --radius-xl: 1rem;      /* 16px */
+  --radius-2xl: 1.5rem;   /* 24px */
+  --radius-full: 9999px;
+  
+  /* Z-index layers */
+  --z-dropdown: 1000;
+  --z-sticky: 1020;
+  --z-fixed: 1030;
+  --z-modal-backdrop: 1040;
+  --z-modal: 1050;
+  --z-popover: 1060;
+  --z-tooltip: 1070;
+  --z-toast: 1080;
+}
+
+/* 🌙 Dark Theme (Default - Netflix inspired) */
+[data-theme="dark"] {
+  /* Primary colors */
+  --color-primary: #1a1a2e;
+  --color-primary-light: #16213e;
+  --color-primary-dark: #0f0f1a;
+  --color-primary-rgb: 26, 26, 46;
+  
+  /* Accent colors */
+  --color-accent: #4CAF50;
+  --color-accent-light: #81C784;
+  --color-accent-dark: #388E3C;
+  --color-accent-rgb: 76, 175, 80;
+  
+  /* Semantic colors */
+  --color-success: #4CAF50;
+  --color-success-light: #81C784;
+  --color-success-dark: #388E3C;
+  
+  --color-warning: #FF9800;
+  --color-warning-light: #FFB74D;
+  --color-warning-dark: #F57C00;
+  
+  --color-error: #F44336;
+  --color-error-light: #EF5350;
+  --color-error-dark: #D32F2F;
+  
+  --color-info: #2196F3;
+  --color-info-light: #64B5F6;
+  --color-info-dark: #1976D2;
+  
+  /* Text colors */
+  --text-primary: #FFFFFF;
+  --text-secondary: #B0BEC5;
+  --text-muted: #78909C;
+  --text-disabled: #546E7A;
+  --text-inverse: #212529;
+  
+  /* Background colors */
+  --bg-primary: #1a1a2e;
+  --bg-secondary: #16213e;
+  --bg-tertiary: #1e2139;
+  --bg-card: #1e2139;
+  --bg-elevated: #252a44;
+  --bg-overlay: rgba(26, 26, 46, 0.95);
+  --bg-glass: rgba(26, 26, 46, 0.8);
+  
+  /* Border colors */
+  --border-primary: #2d3748;
+  --border-secondary: #4a5568;
+  --border-muted: #2a2f4a;
+  
+  /* Chat specific colors */
+  --chat-user-bg: #4CAF50;
+  --chat-user-text: #FFFFFF;
+  --chat-ai-bg: #16213e;
+  --chat-ai-text: #FFFFFF;
+  --chat-input-bg: #1e2139;
+  --chat-input-border: #2d3748;
+  
+  /* Shadows */
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.3);
+  --shadow-md: 0 4px 6px rgba(0, 0, 0, 0.3);
+  --shadow-lg: 0 10px 15px rgba(0, 0, 0, 0.4);
+  --shadow-xl: 0 20px 25px rgba(0, 0, 0, 0.5);
+  --shadow-2xl: 0 25px 50px rgba(0, 0, 0, 0.6);
+  
+  /* Gradients */
+  --gradient-hero: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+  --gradient-card: linear-gradient(145deg, #1e2139 0%, #16213e 100%);
+  --gradient-accent: linear-gradient(135deg, #4CAF50 0%, #81C784 100%);
+}
+
+/* ☀️ Light Theme (Clean medical/professional) */
+[data-theme="light"] {
+  /* Primary colors */
+  --color-primary: #ffffff;
+  --color-primary-light: #f8f9fa;
+  --color-primary-dark: #e9ecef;
+  --color-primary-rgb: 255, 255, 255;
+  
+  /* Accent colors */
+  --color-accent: #007bff;
+  --color-accent-light: #66b3ff;
+  --color-accent-dark: #0056b3;
+  --color-accent-rgb: 0, 123, 255;
+  
+  /* Semantic colors */
+  --color-success: #28a745;
+  --color-success-light: #6bcf7f;
+  --color-success-dark: #1e7e34;
+  
+  --color-warning: #ffc107;
+  --color-warning-light: #ffda58;
+  --color-warning-dark: #d39e00;
+  
+  --color-error: #dc3545;
+  --color-error-light: #e4606d;
+  --color-error-dark: #bd2130;
+  
+  --color-info: #17a2b8;
+  --color-info-light: #5bc0de;
+  --color-info-dark: #138496;
+  
+  /* Text colors */
+  --text-primary: #212529;
+  --text-secondary: #6c757d;
+  --text-muted: #adb5bd;
+  --text-disabled: #dee2e6;
+  --text-inverse: #ffffff;
+  
+  /* Background colors */
+  --bg-primary: #ffffff;
+  --bg-secondary: #f8f9fa;
+  --bg-tertiary: #e9ecef;
+  --bg-card: #ffffff;
+  --bg-elevated: #ffffff;
+  --bg-overlay: rgba(255, 255, 255, 0.95);
+  --bg-glass: rgba(255, 255, 255, 0.9);
+  
+  /* Border colors */
+  --border-primary: #dee2e6;
+  --border-secondary: #adb5bd;
+  --border-muted: #e9ecef;
+  
+  /* Chat specific colors */
+  --chat-user-bg: #007bff;
+  --chat-user-text: #ffffff;
+  --chat-ai-bg: #f8f9fa;
+  --chat-ai-text: #212529;
+  --chat-input-bg: #ffffff;
+  --chat-input-border: #dee2e6;
+  
+  /* Shadows for light theme */
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.1);
+  --shadow-md: 0 4px 6px rgba(0, 0, 0, 0.1);
+  --shadow-lg: 0 10px 15px rgba(0, 0, 0, 0.15);
+  --shadow-xl: 0 20px 25px rgba(0, 0, 0, 0.2);
+  --shadow-2xl: 0 25px 50px rgba(0, 0, 0, 0.25);
+  
+  /* Gradients for light theme */
+  --gradient-hero: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 50%, #007bff 100%);
+  --gradient-card: linear-gradient(145deg, #ffffff 0%, #f8f9fa 100%);
+  --gradient-accent: linear-gradient(135deg, #007bff 0%, #66b3ff 100%);
+}
+
+/* Universal smooth transitions for theme switching */
+*,
+*::before,
+*::after {
+  transition: 
+    background-color var(--theme-transition-duration) var(--theme-transition-timing),
+    color var(--theme-transition-duration) var(--theme-transition-timing),
+    border-color var(--theme-transition-duration) var(--theme-transition-timing),
+    box-shadow var(--theme-transition-duration) var(--theme-transition-timing),
+    opacity var(--theme-transition-duration) var(--theme-transition-timing);
+}
+
+/* Disable transitions during theme initialization to prevent flash */
+.no-transitions *,
+.no-transitions *::before,
+.no-transitions *::after {
+  transition: none !important;
+}
+
+/* Theme toggle animations - these are specifically handled */
+.theme-toggle,
+.theme-toggle *,
+.theme-toggle::before,
+.theme-toggle::after {
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+}
+
+/* Custom scrollbar for dark theme */
+[data-theme="dark"] ::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+[data-theme="dark"] ::-webkit-scrollbar-track {
+  background: var(--bg-secondary);
+  border-radius: var(--radius-md);
+}
+
+[data-theme="dark"] ::-webkit-scrollbar-thumb {
+  background: var(--border-secondary);
+  border-radius: var(--radius-md);
+}
+
+[data-theme="dark"] ::-webkit-scrollbar-thumb:hover {
+  background: var(--text-muted);
+}
+
+/* Custom scrollbar for light theme */
+[data-theme="light"] ::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+[data-theme="light"] ::-webkit-scrollbar-track {
+  background: var(--bg-secondary);
+  border-radius: var(--radius-md);
+}
+
+[data-theme="light"] ::-webkit-scrollbar-thumb {
+  background: var(--border-secondary);
+  border-radius: var(--radius-md);
+}
+
+[data-theme="light"] ::-webkit-scrollbar-thumb:hover {
+  background: var(--text-muted);
+}
+
+/* Focus styles that adapt to theme */
+:focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 2px;
+}
+
+/* Selection styles */
+::selection {
+  background-color: var(--color-accent);
+  color: var(--text-inverse);
+}
+
+::-moz-selection {
+  background-color: var(--color-accent);
+  color: var(--text-inverse);
+}
+
+/* Print styles - force light theme for printing */
+@media print {
+  :root {
+    color-scheme: light;
+  }
+  
+  * {
+    background: white !important;
+    color: black !important;
+    box-shadow: none !important;
+  }
+}
+
+/* Reduced motion preferences */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+  
+  .theme-toggle,
+  .theme-toggle *,
+  .theme-toggle::before,
+  .theme-toggle::after {
+    transition: none !important;
+  }
+}
+
+/* High contrast mode support */
+@media (prefers-contrast: high) {
+  :root {
+    --border-primary: currentColor;
+    --border-secondary: currentColor;
+  }
+}

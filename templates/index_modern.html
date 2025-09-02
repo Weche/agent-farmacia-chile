@@ -1,0 +1,1321 @@
+<!DOCTYPE html>
+<html lang="es" data-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🏥 Farmacias Chile - Encuentra tu farmacia con IA</title>
+    <meta name="description" content="Encuentra farmacias de turno en Chile con nuestro asistente inteligente en español. Búsqueda por ubicación, horarios y medicamentos disponibles.">
+    <meta name="theme-color" content="#1a1a2e">
+    
+    <!-- Favicon -->
+    <link rel="icon" type="image/png" href="/templates/assets/images/logo1.png">
+    
+    <!-- Preconnect to external resources -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link rel="preconnect" href="https://unpkg.com">
+    
+    <!-- Google Fonts - Inter for modern typography -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    
+    <!-- Leaflet CSS -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    
+    <!-- Our custom CSS -->
+    <link rel="stylesheet" href="/templates/assets/css/themes.css">
+    <link rel="stylesheet" href="/templates/assets/css/main.css">
+    <link rel="stylesheet" href="/templates/assets/css/components.css">
+    
+    <!-- Custom styles for map markers -->
+    <style>
+        .pharmacy-marker {
+            background: transparent;
+            border: none;
+        }
+        
+        .marker-content {
+            background: white;
+            border: 2px solid #4CAF50;
+            border-radius: 50%;
+            width: 30px;
+            height: 30px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 12px;
+            font-weight: bold;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+            position: relative;
+        }
+        
+        .marker-content span {
+            background: #4CAF50;
+            color: white;
+            border-radius: 50%;
+            width: 18px;
+            height: 18px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 10px;
+            position: absolute;
+            top: -8px;
+            right: -8px;
+        }
+        
+        .user-location-marker {
+            background: transparent;
+            border: none;
+            font-size: 20px;
+        }
+        
+        .pharmacy-marker-preview {
+            background: transparent;
+            border: none;
+        }
+        
+        .marker-content-preview {
+            background: white;
+            border: 2px solid #4CAF50;
+            border-radius: 50%;
+            width: 16px;
+            height: 16px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 8px;
+            font-weight: bold;
+            box-shadow: 0 1px 4px rgba(0,0,0,0.3);
+        }
+        
+        .pharmacy-popup {
+            font-family: 'Inter', sans-serif;
+        }
+        
+        .pharmacy-popup h3 {
+            margin: 0 0 8px 0;
+            color: #4CAF50;
+            font-size: 16px;
+        }
+        
+        .pharmacy-popup p {
+            margin: 4px 0;
+            font-size: 14px;
+        }
+        
+        .pharmacy-popup strong {
+            color: #333;
+        }
+        
+        /* App Header Styles */
+        .app-header {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-bottom: 1px solid #e0e0e0;
+            padding: 1rem 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            z-index: 1000;
+            height: 60px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        
+        .header-left .logo {
+            font-size: 1.5rem;
+            font-weight: bold;
+            color: #2c3e50;
+            text-decoration: none;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        
+        .header-right {
+            display: flex;
+            align-items: center;
+        }
+        
+        /* Simple Theme Toggle Button */
+        .theme-toggle {
+            background: #f0f0f0;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            padding: 8px 12px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            font-size: 16px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-width: 40px;
+            height: 32px;
+        }
+        
+        .theme-toggle:hover {
+            background: #e0e0e0;
+            transform: scale(1.05);
+        }
+        
+        .theme-toggle:active {
+            transform: scale(0.95);
+        }
+        
+        .theme-icon {
+            display: block;
+            transition: all 0.3s ease;
+        }
+        
+        /* Light theme shows moon (click to go dark) */
+        .theme-icon::before {
+            content: "🌙";
+        }
+        
+        /* Dark theme styles */
+        [data-theme="dark"] .theme-toggle {
+            background: #444;
+            border-color: #666;
+            color: #fff;
+        }
+        
+        [data-theme="dark"] .theme-toggle:hover {
+            background: #555;
+        }
+        
+        /* Dark theme shows sun (click to go light) */
+        [data-theme="dark"] .theme-icon::before {
+            content: "☀️";
+        }
+        
+        [data-theme="dark"] .theme-icon {
+            transform: rotate(20deg);
+        }
+        
+        /* Prevent transitions during initial load */
+        .no-transitions * {
+            transition: none !important;
+        }
+        
+        /* Dark theme styles for header */
+        [data-theme="dark"] .app-header {
+            background: rgba(30, 30, 30, 0.95);
+            border-bottom-color: #444;
+        }
+        
+        [data-theme="dark"] .header-left .logo {
+            color: #fff;
+        }
+        
+        /* Add top margin to body to account for fixed header */
+        body {
+            margin-top: 80px;
+        }
+        
+        /* Typing indicator animation styles */
+        .typing-avatar-container {
+            display: inline-block;
+            margin-right: 10px;
+            vertical-align: middle;
+        }
+        
+        .typing-indicator .message-content-main {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .typing-dots {
+            display: flex;
+            gap: 4px;
+        }
+        
+        .typing-dots span {
+            width: 8px;
+            height: 8px;
+            background: var(--primary-color);
+            border-radius: 50%;
+            animation: typing 1.4s infinite ease-in-out;
+        }
+        
+        .typing-dots span:nth-child(1) { animation-delay: 0.0s; }
+        .typing-dots span:nth-child(2) { animation-delay: 0.2s; }
+        .typing-dots span:nth-child(3) { animation-delay: 0.4s; }
+        
+        @keyframes typing {
+            0%, 80%, 100% { transform: scale(0.8); opacity: 0.5; }
+            40% { transform: scale(1); opacity: 1; }
+        }
+    </style>
+    
+    <!-- PWA Meta Tags -->
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="Farmacias Chile">
+    
+    <!-- Open Graph Meta Tags -->
+    <meta property="og:title" content="Farmacias Chile - Encuentra tu farmacia con IA">
+    <meta property="og:description" content="Asistente inteligente para encontrar farmacias de turno en Chile">
+    <meta property="og:type" content="website">
+    <meta property="og:image" content="/templates/assets/images/og-image.jpg">
+    
+    <!-- Structured Data -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "WebApplication",
+      "name": "Farmacias Chile",
+      "description": "Encuentra farmacias de turno en Chile con asistente inteligente",
+      "applicationCategory": "HealthApplication",
+      "operatingSystem": "Any",
+      "offers": {
+        "@type": "Offer",
+        "price": "0",
+        "priceCurrency": "CLP"
+      }
+    }
+    </script>
+</head>
+
+<body>
+    <!-- App Header with Theme Toggle (back inside body for JS access) -->
+    <header class="app-header">
+        <div class="header-left">
+            <a href="/" class="logo">
+                <img src="/templates/assets/images/logo1.png" alt="Logo" style="height: 32px; width: auto; margin-right: 8px; vertical-align: middle;">
+                Farmacias Chile
+            </a>
+        </div>
+        <div class="header-right">
+            <button class="theme-toggle" id="themeToggle" aria-label="Cambiar tema">
+                <span class="theme-icon"></span>
+            </button>
+        </div>
+    </header>
+
+    <!-- Hero Section = Main Chat Interface -->
+    <section class="hero-section">
+        <div class="hero-main-interface">
+            <div class="hero-container">
+                <!-- Left Side: Chat Interface -->
+                <div class="chat-main-panel">
+                    <div class="chat-header-main">
+                        <div class="ai-avatar-large">
+                            <img src="/templates/assets/images/logo1.png" alt="AI Assistant" style="width: 60px; height: 60px; border-radius: 50%; object-fit: contain;">
+                        </div>
+                        <div class="ai-info-main">
+                            <h2>Asistente Farmacéutico</h2>
+                            <p>Encuentra farmacias cerca de ti</p>
+                        </div>
+                    </div>
+                    
+                    <!-- Chat History Display -->
+                    <div class="chat-messages-main" id="mainChatMessages">
+                        <div class="message ai-message-main">
+                            <div class="message-content-main">
+                                <p>¡Hola! Ingresa tu dirección o pregúntame sobre farmacias cerca de ti.</p>
+                                <span class="message-time-main">Ahora</span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Chat Input -->
+                    <div class="chat-input-main">
+                        <input type="text" 
+                               placeholder="Pregunta: ¿Hay farmacia de turno en Santiago?" 
+                               id="mainChatInput"
+                               class="chat-input-field-main"
+                               autocomplete="off">
+                        <button id="mainChatSend" class="chat-send-main">
+                            Enviar
+                        </button>
+                    </div>
+                </div>
+                
+                <!-- Right Side: Address & Map -->
+                <div class="location-panel">
+                    <div class="address-input-section">
+                        <label for="addressInput">📍 Tu Ubicación</label>
+                        <div class="address-input-container">
+                            <input type="text" 
+                                   id="addressInput"
+                                   placeholder="Ej: Providencia 123, Santiago"
+                                   class="address-input-field"
+                                   autocomplete="off">
+                            <button id="useLocationBtn" class="use-location-btn">
+                                📍 Usar mi ubicación
+                            </button>
+                        </div>
+                        <div id="addressSuggestions" class="address-suggestions"></div>
+                    </div>
+                    
+                    <!-- Mini Map Preview -->
+                    <div class="map-preview-container">
+                        <div id="mapPreview" class="map-preview"></div>
+                    </div>
+                    
+                    <!-- Quick Actions -->
+                    <div class="quick-actions-main">
+                        <button class="action-btn-main" data-action="open-now">🕐 Abiertas ahora</button>
+                        <button class="action-btn-main" data-action="medications">💊 Medicamentos</button>
+                        <button class="action-btn-main" data-action="nearest">🚗 Más cercana</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Main Content -->
+    <main class="main-content">
+        <!-- Statistics Section -->
+        <section class="stats-section">
+            <div class="stats-grid">
+                <div class="stat-card fade-in stagger-1">
+                    <div class="stat-number" id="total-pharmacies">0</div>
+                    <div class="stat-label">Total Farmacias</div>
+                </div>
+                <div class="stat-card fade-in stagger-2">
+                    <div class="stat-number" id="open-pharmacies">0</div>
+                    <div class="stat-label">De Turno</div>
+                </div>
+                <div class="stat-card fade-in stagger-3">
+                    <div class="stat-number" id="communes-count">0</div>
+                    <div class="stat-label">Comunas</div>
+                </div>
+                <div class="stat-card fade-in stagger-4">
+                    <div class="stat-time" id="current-time">--:--:--</div>
+                    <div class="stat-label">Hora Actual</div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Search Controls -->
+        <section class="search-controls">
+            <div class="search-controls-grid">
+                <input 
+                    type="text" 
+                    id="search-input" 
+                    class="search-input"
+                    placeholder="Buscar por comuna (ej: santiago, valparaíso)" 
+                    list="communes-list" 
+                    autocomplete="off"
+                >
+                <datalist id="communes-list">
+                    <!-- Communes will be loaded dynamically -->
+                </datalist>
+                
+                <select id="filter-select" class="filter-select">
+                    <option value="all">Todas las farmacias</option>
+                    <option value="open">Solo de turno</option>
+                    <option value="open-now">Abiertas ahora</option>
+                </select>
+                
+                <button id="search-btn" class="btn btn-primary">
+                    🔍 Buscar
+                </button>
+                
+                <button id="location-btn" class="btn btn-success">
+                    📍 Mi Ubicación
+                </button>
+                
+                <button id="clear-btn" class="btn btn-secondary">
+                    🗑️ Limpiar
+                </button>
+            </div>
+        </section>
+
+        <!-- Map Section -->
+        <section class="content-section">
+            <div class="section-header">
+                <h2 class="section-title">🗺️ Mapa Interactivo</h2>
+            </div>
+            <div class="section-content">
+                <div class="map-section">
+                    <div id="map"></div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Results Section -->
+        <section class="content-section results-section">
+            <div class="section-header">
+                <div class="results-header">
+                    <h2 class="results-title">📋 Farmacias Encontradas</h2>
+                    <div class="results-count" id="results-count">
+                        Realiza una búsqueda para ver resultados
+                    </div>
+                </div>
+                <div class="filter-chips" id="filter-chips">
+                    <span class="chip active" data-filter="all">Todas</span>
+                    <span class="chip" data-filter="open">De Turno</span>
+                    <span class="chip" data-filter="open-now">Abiertas Ahora</span>
+                    <span class="chip" data-filter="nearby">Cercanas</span>
+                </div>
+            </div>
+            <div class="section-content">
+                <div id="results-container">
+                    <!-- Results will be populated here -->
+                    <div class="pharmacy-grid-empty">
+                        <div class="empty-icon">🔍</div>
+                        <div class="empty-title">Busca tu farmacia ideal</div>
+                        <div class="empty-description">
+                            Usa el buscador o nuestro asistente inteligente para encontrar farmacias cerca de ti.
+                        </div>
+                        <button class="btn btn-primary" onclick="document.getElementById('search-input').focus()">
+                            Comenzar búsqueda
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <!-- Loading Overlay -->
+    <div class="loading-overlay" id="loadingOverlay" style="display: none;">
+        <div class="loading">
+            <div class="loading-spinner"></div>
+            <span>Cargando...</span>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    
+    <!-- Our JavaScript modules -->
+    <script type="module">
+        // Import our modules
+        import { ThemeManager } from '/templates/assets/js/theme.js';
+        import { PharmacyFinder } from '/templates/assets/js/main.js';
+        
+        // Debug function for theme toggle
+        function debugThemeToggle() {
+            const toggle = document.getElementById('themeToggle');
+            if (toggle) {
+                console.log('🔧 Theme toggle found:', toggle);
+                console.log('🔧 Current theme attribute:', document.documentElement.getAttribute('data-theme'));
+                
+                // Add manual click handler for debugging
+                toggle.addEventListener('click', function(e) {
+                    console.log('🔧 Manual click detected');
+                    const currentTheme = document.documentElement.getAttribute('data-theme') || 'light';
+                    const newTheme = currentTheme === 'light' ? 'dark' : 'light';
+                    console.log('🔧 Switching from', currentTheme, 'to', newTheme);
+                    document.documentElement.setAttribute('data-theme', newTheme);
+                    localStorage.setItem('theme', newTheme);
+                });
+            } else {
+                console.log('❌ Theme toggle not found');
+            }
+        }
+        
+        // Initialize the application
+        class App {
+            constructor() {
+                this.theme = new ThemeManager();
+                this.pharmacyFinder = new PharmacyFinder();
+                this.sessionId = null; // Initialize chat session ID
+                this.mapPreview = null; // Map preview instance
+                this.mainMap = null; // Main map instance
+                this.currentLocationMarker = null; // Current location marker
+                this.pharmacyMarkers = []; // Array to store pharmacy markers
+                this.pharmacyMarkersGroup = null; // Layer group for pharmacy markers
+                this.previewPharmacyMarkersGroup = null; // Layer group for pharmacy markers on preview map
+                this.logoAnimationInterval = null; // For typing indicator logo animation
+                this.initIntegratedChat();
+                
+                // Make globally available for legacy code
+                window.app = this.pharmacyFinder;
+                window.themeManager = this.theme;
+                
+                // Debug theme toggle after a short delay
+                setTimeout(debugThemeToggle, 1000);
+                
+                console.log('🚀 Integrated Pharmacy Finder App initialized');
+            }
+            
+            initIntegratedChat() {
+                const chatInput = document.getElementById('mainChatInput');
+                const chatSend = document.getElementById('mainChatSend');
+                const chatMessages = document.getElementById('mainChatMessages');
+                const addressInput = document.getElementById('addressInput');
+                const useLocationBtn = document.getElementById('useLocationBtn');
+                
+                console.log('🔧 Initializing integrated chat...', {
+                    chatInput: !!chatInput,
+                    chatSend: !!chatSend,
+                    chatMessages: !!chatMessages
+                });
+                
+                // Initialize map preview
+                this.initMapPreview();
+                
+                // Initialize main map
+                this.initMainMap();
+                
+                if (chatInput && chatSend) {
+                    chatSend.addEventListener('click', () => {
+                        console.log('💬 Send button clicked');
+                        this.sendMessage();
+                    });
+                    chatInput.addEventListener('keypress', (e) => {
+                        if (e.key === 'Enter') {
+                            console.log('💬 Enter key pressed');
+                            this.sendMessage();
+                        }
+                    });
+                    console.log('✅ Chat event listeners attached');
+                } else {
+                    console.error('❌ Chat elements not found!');
+                }
+                
+                if (useLocationBtn) {
+                    useLocationBtn.addEventListener('click', () => this.useCurrentLocation());
+                }
+                
+                // Address input with autocomplete
+                if (addressInput) {
+                    addressInput.addEventListener('input', (e) => this.handleAddressInput(e.target.value));
+                }
+                
+                // Quick action buttons
+                document.querySelectorAll('.action-btn-main').forEach(btn => {
+                    btn.addEventListener('click', (e) => {
+                        const action = e.target.dataset.action;
+                        this.handleQuickAction(action);
+                    });
+                });
+            }
+            
+            initMapPreview() {
+                // Initialize map preview
+                try {
+                    if (window.L) {
+                        this.mapPreview = L.map('mapPreview', {
+                            zoomControl: false,
+                            attributionControl: false,
+                            dragging: false,
+                            touchZoom: false,
+                            doubleClickZoom: false,
+                            scrollWheelZoom: false,
+                            boxZoom: false,
+                            keyboard: false
+                        }).setView([-33.4489, -70.6693], 10);
+
+                        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                            attribution: ''
+                        }).addTo(this.mapPreview);
+                        
+                        // Initialize pharmacy markers group for preview map
+                        this.previewPharmacyMarkersGroup = L.layerGroup().addTo(this.mapPreview);
+                        
+                        console.log('🗺️ Map preview initialized');
+                    } else {
+                        console.warn('Leaflet not loaded, map preview not initialized');
+                    }
+                } catch (error) {
+                    console.error('Error initializing map preview:', error);
+                }
+            }
+            
+            initMainMap() {
+                // Initialize main interactive map
+                try {
+                    if (window.L && !this.mainMap) { // Check if map is not already initialized
+                        this.mainMap = L.map('map').setView([-33.4489, -70.6693], 10);
+
+                        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                            attribution: '© OpenStreetMap contributors'
+                        }).addTo(this.mainMap);
+                        
+                        // Initialize pharmacy markers group
+                        this.pharmacyMarkersGroup = L.layerGroup().addTo(this.mainMap);
+                        
+                        console.log('🗺️ Main map initialized');
+                    } else if (this.mainMap) {
+                        console.log('🗺️ Main map already initialized, skipping');
+                    } else {
+                        console.warn('Leaflet not loaded, main map not initialized');
+                    }
+                } catch (error) {
+                    console.error('Error initializing main map:', error);
+                }
+            }
+            
+            showPharmaciesOnMap(pharmacies, userLocation = null) {
+                console.log('🏥 Showing pharmacies on map:', pharmacies);
+                
+                if (!this.mainMap || !this.pharmacyMarkersGroup) {
+                    console.warn('Map not initialized');
+                    return;
+                }
+                
+                // Clear existing pharmacy markers
+                this.pharmacyMarkersGroup.clearLayers();
+                
+                if (!pharmacies || pharmacies.length === 0) {
+                    console.log('No pharmacies to show');
+                    return;
+                }
+                
+                const bounds = [];
+                
+                // Add user location marker if provided
+                if (userLocation && userLocation.latitud && userLocation.longitud) {
+                    const userMarker = L.marker([userLocation.latitud, userLocation.longitud], {
+                        icon: L.divIcon({
+                            className: 'user-location-marker',
+                            html: '📍',
+                            iconSize: [30, 30],
+                            iconAnchor: [15, 30]
+                        })
+                    }).bindPopup('Tu ubicación');
+                    
+                    this.pharmacyMarkersGroup.addLayer(userMarker);
+                    bounds.push([userLocation.latitud, userLocation.longitud]);
+                }
+                
+                // Add pharmacy markers
+                pharmacies.forEach((pharmacy, index) => {
+                    if (pharmacy.ubicacion && pharmacy.ubicacion.latitud && pharmacy.ubicacion.longitud) {
+                        const lat = pharmacy.ubicacion.latitud;
+                        const lng = pharmacy.ubicacion.longitud;
+                        
+                        // Create custom icon for pharmacy
+                        const isOpen = pharmacy.abierta || pharmacy.turno;
+                        const iconHtml = isOpen ? '🟢' : '🔴';
+                        
+                        const marker = L.marker([lat, lng], {
+                            icon: L.divIcon({
+                                className: 'pharmacy-marker',
+                                html: `<div class="marker-content">${iconHtml}<span>${index + 1}</span></div>`,
+                                iconSize: [30, 30],
+                                iconAnchor: [15, 30]
+                            })
+                        });
+                        
+                        // Create popup content
+                        const popupContent = `
+                            <div class="pharmacy-popup">
+                                <h3>${pharmacy.nombre}</h3>
+                                <p><strong>📍</strong> ${pharmacy.direccion}, ${pharmacy.comuna}</p>
+                                <p><strong>📞</strong> ${pharmacy.telefono}</p>
+                                <p><strong>⏰</strong> ${pharmacy.horario}</p>
+                                <p><strong>🌙</strong> ${pharmacy.turno ? 'Farmacia de turno' : 'Horario regular'}</p>
+                                <p><strong>🟢</strong> ${isOpen ? 'Abierta ahora' : 'Cerrada'}</p>
+                            </div>
+                        `;
+                        
+                        marker.bindPopup(popupContent);
+                        this.pharmacyMarkersGroup.addLayer(marker);
+                        bounds.push([lat, lng]);
+                    }
+                });
+                
+                // Fit map to show all markers
+                if (bounds.length > 0) {
+                    this.mainMap.fitBounds(bounds, { padding: [20, 20] });
+                }
+                
+                // Auto-scroll to map section
+                document.getElementById('map').scrollIntoView({ behavior: 'smooth' });
+            }
+            
+            showPharmaciesOnMapPreview(pharmacies, userLocation = null) {
+                console.log('🏥 Showing pharmacies on map preview:', pharmacies);
+                
+                if (!this.mapPreview || !this.previewPharmacyMarkersGroup) {
+                    console.warn('Map preview not initialized');
+                    return;
+                }
+                
+                // Clear existing pharmacy markers from preview
+                this.previewPharmacyMarkersGroup.clearLayers();
+                
+                if (!pharmacies || pharmacies.length === 0) {
+                    console.log('No pharmacies to show on preview');
+                    return;
+                }
+                
+                const bounds = [];
+                
+                // Add user location marker if provided
+                if (userLocation && userLocation.latitud && userLocation.longitud) {
+                    const userMarker = L.marker([userLocation.latitud, userLocation.longitud], {
+                        icon: L.divIcon({
+                            className: 'user-location-marker',
+                            html: '📍',
+                            iconSize: [20, 20],
+                            iconAnchor: [10, 20]
+                        })
+                    }).bindPopup('Tu ubicación');
+                    
+                    this.previewPharmacyMarkersGroup.addLayer(userMarker);
+                    bounds.push([userLocation.latitud, userLocation.longitud]);
+                }
+                
+                // Add pharmacy markers to preview map
+                pharmacies.forEach((pharmacy, index) => {
+                    if (pharmacy.ubicacion && pharmacy.ubicacion.latitud && pharmacy.ubicacion.longitud) {
+                        const lat = pharmacy.ubicacion.latitud;
+                        const lng = pharmacy.ubicacion.longitud;
+                        
+                        // Create smaller icons for preview map
+                        const isOpen = pharmacy.abierta || pharmacy.turno;
+                        const iconHtml = isOpen ? '🟢' : '🔴';
+                        
+                        const marker = L.marker([lat, lng], {
+                            icon: L.divIcon({
+                                className: 'pharmacy-marker-preview',
+                                html: `<div class="marker-content-preview">${iconHtml}</div>`,
+                                iconSize: [16, 16],
+                                iconAnchor: [8, 16]
+                            })
+                        });
+                        
+                        // Create simple popup for preview
+                        const popupContent = `
+                            <div class="pharmacy-popup-preview">
+                                <strong>${pharmacy.nombre}</strong><br>
+                                ${pharmacy.direccion}<br>
+                                ${isOpen ? '🟢 Abierta' : '🔴 Cerrada'}
+                            </div>
+                        `;
+                        
+                        marker.bindPopup(popupContent);
+                        this.previewPharmacyMarkersGroup.addLayer(marker);
+                        bounds.push([lat, lng]);
+                    }
+                });
+                
+                // Fit preview map to show all markers
+                if (bounds.length > 0) {
+                    this.mapPreview.fitBounds(bounds, { padding: [10, 10] });
+                }
+                
+                console.log('🗺️ Map preview updated with', pharmacies.length, 'pharmacies');
+            }
+            
+            checkAndShowPharmaciesOnMap(responseData) {
+                console.log('🔍 Checking response for pharmacy data:', responseData);
+                console.log('🔍 Response keys:', Object.keys(responseData));
+                
+                // Check if response contains tool results
+                if (responseData.tool_results) {
+                    console.log('✅ Found tool_results:', responseData.tool_results.length, 'tools');
+                    for (const toolResult of responseData.tool_results) {
+                        console.log('🔧 Checking tool result:', toolResult);
+                        console.log('🔧 Tool name:', toolResult.tool);
+                        console.log('🔧 Tool success:', toolResult.success);
+                        
+                        // Check for pharmacy search tools
+                        if (toolResult.tool === 'search_farmacias_nearby' || toolResult.tool === 'search_farmacias') {
+                            console.log('🏥 Found pharmacy search tool!');
+                            console.log('🏥 Tool result data structure:', toolResult.data);
+                            console.log('🏥 Tool result data keys:', toolResult.data ? Object.keys(toolResult.data) : 'No data');
+                            
+                            // Check deeper structure - it seems data has nested data
+                            if (toolResult.data && toolResult.data.data) {
+                                console.log('🏥 Nested data structure:', toolResult.data.data);
+                                console.log('🏥 Nested data keys:', Object.keys(toolResult.data.data));
+                            }
+                            
+                            // Try both possible structures
+                            let pharmacyData = null;
+                            let userLocation = null;
+                            
+                            if (toolResult.success && toolResult.data) {
+                                // Try nested structure first
+                                if (toolResult.data.data && toolResult.data.data.farmacias) {
+                                    pharmacyData = toolResult.data.data.farmacias;
+                                    if (toolResult.data.data.resumen) {
+                                        const resumen = toolResult.data.data.resumen;
+                                        if (resumen.latitud && resumen.longitud) {
+                                            userLocation = {
+                                                latitud: resumen.latitud,
+                                                longitud: resumen.longitud
+                                            };
+                                        }
+                                    }
+                                }
+                                // Try direct structure as fallback
+                                else if (toolResult.data.farmacias) {
+                                    pharmacyData = toolResult.data.farmacias;
+                                    if (toolResult.data.resumen) {
+                                        const resumen = toolResult.data.resumen;
+                                        if (resumen.latitud && resumen.longitud) {
+                                            userLocation = {
+                                                latitud: resumen.latitud,
+                                                longitud: resumen.longitud
+                                            };
+                                        }
+                                    }
+                                }
+                            }
+                            
+                            if (pharmacyData) {
+                                console.log('🏥 Found pharmacy data:', pharmacyData.length, 'pharmacies');
+                                console.log('🏥 First pharmacy:', pharmacyData[0]);
+                                
+                                console.log('📍 User location from resumen:', userLocation);
+                                
+                                // Show pharmacies on both main map and preview map
+                                console.log('🗺️ About to show pharmacies on maps...');
+                                this.showPharmaciesOnMap(pharmacyData, userLocation);
+                                this.showPharmaciesOnMapPreview(pharmacyData, userLocation);
+                                return; // Exit after first match
+                            } else {
+                                console.log('❌ Tool succeeded but no pharmacy data found in any structure');
+                                console.log('❌ Available data:', toolResult.data);
+                            }
+                        } else {
+                            console.log('⏭️ Not a pharmacy search tool:', toolResult.tool);
+                        }
+                    }
+                } else {
+                    console.log('❌ No tool_results in response');
+                }
+                
+                // Alternative: Check if response directly contains pharmacy data
+                if (responseData.farmacias) {
+                    console.log('🏥 Found direct pharmacy data:', responseData.farmacias);
+                    this.showPharmaciesOnMap(responseData.farmacias);
+                    this.showPharmaciesOnMapPreview(responseData.farmacias);
+                } else {
+                    console.log('❌ No direct pharmacy data either');
+                }
+            }
+            
+            async sendMessage() {
+                console.log('📤 sendMessage called');
+                const input = document.getElementById('mainChatInput');
+                const message = input.value.trim();
+                console.log('💬 Message to send:', message);
+                
+                if (!message) {
+                    console.log('❌ Empty message, returning');
+                    return;
+                }
+                
+                this.addMessage('user', message);
+                input.value = '';
+                
+                await this.sendToAgent(message);
+            }
+            
+            async sendCoordinatesMessage(message) {
+                console.log('📍 sendCoordinatesMessage called with:', message);
+                await this.sendToAgent(message);
+            }
+            
+            async sendToAgent(message) {
+                // Add typing indicator
+                this.showTypingIndicator();
+                
+                // Normal timing for production use
+                const minDisplayTime = 2500; // 2.5 seconds - enough to see the animation
+                const startTime = Date.now();
+                
+                const payload = { 
+                    message: message,
+                    session_id: this.sessionId || null 
+                };
+                console.log('📤 Sending payload:', payload);
+                
+                try {
+                    const response = await fetch('/chat', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(payload)
+                    });
+                    
+                    console.log('📥 Response status:', response.status);
+                    
+                    if (!response.ok) {
+                        throw new Error(`HTTP error! status: ${response.status}`);
+                    }
+                    
+                    const data = await response.json();
+                    console.log('📥 Response data:', data);
+                    
+                    // Calculate how long to wait before hiding the typing indicator
+                    const elapsedTime = Date.now() - startTime;
+                    const remainingTime = Math.max(0, minDisplayTime - elapsedTime);
+                    
+                    // Wait for the remaining time to ensure minimum display duration
+                    setTimeout(() => {
+                        this.hideTypingIndicator();
+                        
+                        // Store session ID for future messages
+                        if (data.session_id) {
+                            this.sessionId = data.session_id;
+                            console.log('🔐 Session ID stored:', this.sessionId);
+                        }
+                        
+                        // Display AI response
+                        const aiMessage = data.reply || data.response || 'Respuesta recibida';
+                        this.addMessage('ai', aiMessage);
+                        
+                        // Check if response contains pharmacy data and show on map
+                        this.checkAndShowPharmaciesOnMap(data);
+                        
+                        // Show tools used if any
+                        if (data.tools_used && data.tools_used.length > 0) {
+                            console.log('🔧 Tools used:', data.tools_used);
+                            this.addMessage('ai', `🔧 Herramientas utilizadas: ${data.tools_used.join(', ')}`);
+                        }
+                    }, remainingTime);
+                    
+                } catch (error) {
+                    console.error('❌ Error sending message:', error);
+                    this.hideTypingIndicator();
+                    this.addMessage('ai', 'Lo siento, hubo un error conectando con el servidor. Por favor intenta de nuevo.');
+                }
+            }
+            
+            showTypingIndicator() {
+                const messagesContainer = document.getElementById('mainChatMessages');
+                const typingDiv = document.createElement('div');
+                typingDiv.id = 'typingIndicator';
+                typingDiv.className = 'message ai-message-main typing-indicator';
+                typingDiv.innerHTML = `
+                    <div class="message-content-main">
+                        <div class="typing-avatar-container">
+                            <img id="typingLogo" src="/templates/assets/images/logo_yellow.png" alt="Thinking..." style="width: 40px; height: 40px; border-radius: 50%; object-fit: contain; transition: all 0.2s ease;">
+                        </div>
+                        <div class="typing-dots">
+                            <span></span><span></span><span></span>
+                        </div>
+                        <span style="color: var(--text-muted); font-size: 0.8rem;">El asistente está escribiendo...</span>
+                    </div>
+                `;
+                messagesContainer.appendChild(typingDiv);
+                messagesContainer.scrollTop = messagesContainer.scrollHeight;
+                
+                // Start the logo animation cycle after a short delay
+                setTimeout(() => {
+                    this.startLogoAnimation();
+                }, 100);
+            }
+            
+            hideTypingIndicator() {
+                // Stop the animation first
+                this.stopLogoAnimation();
+                
+                const indicator = document.getElementById('typingIndicator');
+                if (indicator) {
+                    indicator.remove();
+                }
+            }
+            
+            startLogoAnimation() {
+                const logos = [
+                    '/templates/assets/images/logo_yellow.png',
+                    '/templates/assets/images/logo_green.png', 
+                    '/templates/assets/images/logo_red.png'
+                ];
+                
+                let currentIndex = -1; // Start at -1 so first increment makes it 0
+                const logoImg = document.getElementById('typingLogo');
+                
+                if (!logoImg) {
+                    console.log('❌ No typing logo element found');
+                    return;
+                }
+                
+                // Store the interval ID so we can clear it later
+                this.logoAnimationInterval = setInterval(() => {
+                    currentIndex = (currentIndex + 1) % logos.length;
+                    logoImg.src = logos[currentIndex];
+                }, 400); // Perfect speed: Fast enough to show activity, slow enough to see each color
+            }
+            
+            stopLogoAnimation() {
+                if (this.logoAnimationInterval) {
+                    clearInterval(this.logoAnimationInterval);
+                    this.logoAnimationInterval = null;
+                }
+            }
+            
+            handleAddressInput(value) {
+                if (value.length < 3) {
+                    this.hideAddressSuggestions();
+                    return;
+                }
+                
+                // Simple address suggestions (can be enhanced with real geocoding API)
+                const suggestions = [
+                    'Santiago, Región Metropolitana',
+                    'Providencia, Santiago',
+                    'Las Condes, Santiago',
+                    'Ñuñoa, Santiago',
+                    'Valparaíso, Región de Valparaíso',
+                    'Viña del Mar, Región de Valparaíso',
+                    'Concepción, Región del Biobío'
+                ].filter(suggestion => 
+                    suggestion.toLowerCase().includes(value.toLowerCase())
+                );
+                
+                this.showAddressSuggestions(suggestions);
+            }
+            
+            showAddressSuggestions(suggestions) {
+                const container = document.getElementById('addressSuggestions');
+                if (!container) return;
+                
+                if (suggestions.length === 0) {
+                    this.hideAddressSuggestions();
+                    return;
+                }
+                
+                container.innerHTML = suggestions.map(suggestion => 
+                    `<div class="suggestion-item" onclick="app.selectAddress('${suggestion}')">${suggestion}</div>`
+                ).join('');
+                
+                container.style.display = 'block';
+            }
+            
+            hideAddressSuggestions() {
+                const container = document.getElementById('addressSuggestions');
+                if (container) {
+                    container.style.display = 'none';
+                }
+            }
+            
+            selectAddress(address) {
+                const input = document.getElementById('addressInput');
+                if (input) {
+                    input.value = address;
+                    this.hideAddressSuggestions();
+                    this.addMessage('ai', `📍 Ubicación seleccionada: ${address}. Buscando farmacias cercanas...`);
+                    // Here you would typically geocode the address and search for nearby pharmacies
+                }
+            }
+            
+            // Simple markdown to HTML converter
+            parseMarkdown(text) {
+                if (!text) return '';
+                
+                let result = text;
+                
+                // Bold text: **text** -> <strong>text</strong>
+                result = result.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+                
+                // Multiple line breaks for spacing between pharmacies
+                result = result.replace(/\n\n/g, '<br><br>');
+                
+                // Single line breaks
+                result = result.replace(/\n/g, '<br>');
+                
+                return result;
+            }
+            
+            addMessage(type, content) {
+                const messagesContainer = document.getElementById('mainChatMessages');
+                const messageDiv = document.createElement('div');
+                messageDiv.className = `message ${type}-message-main`;
+                
+                const time = new Date().toLocaleTimeString('es-CL', { 
+                    hour: '2-digit', 
+                    minute: '2-digit' 
+                });
+                
+                // Parse markdown formatting for AI messages
+                const formattedContent = type === 'ai' ? this.parseMarkdown(content) : content;
+                
+                messageDiv.innerHTML = `
+                    <div class="message-content-main">
+                        <p>${formattedContent}</p>
+                        <span class="message-time-main">${time}</span>
+                    </div>
+                `;
+                
+                messagesContainer.appendChild(messageDiv);
+                messagesContainer.scrollTop = messagesContainer.scrollHeight;
+            }
+            
+            useCurrentLocation() {
+                console.log('📍 useCurrentLocation called');
+                const useLocationBtn = document.getElementById('useLocationBtn');
+                
+                if (!navigator.geolocation) {
+                    alert('Geolocalización no disponible en tu navegador');
+                    return;
+                }
+                
+                // Disable button and show loading state
+                if (useLocationBtn) {
+                    useLocationBtn.disabled = true;
+                    useLocationBtn.textContent = '📍 Obteniendo ubicación...';
+                }
+                
+                navigator.geolocation.getCurrentPosition(
+                    (position) => {
+                        const { latitude, longitude } = position.coords;
+                        console.log('📍 Location obtained:', latitude, longitude);
+                        
+                        // Update the map preview with new location
+                        if (this.mapPreview) {
+                            this.mapPreview.setView([latitude, longitude], 14);
+                            
+                            // Remove existing marker if any
+                            if (this.currentLocationMarker) {
+                                this.mapPreview.removeLayer(this.currentLocationMarker);
+                            }
+                            
+                            // Add new marker for current location
+                            this.currentLocationMarker = L.marker([latitude, longitude])
+                                .addTo(this.mapPreview)
+                                .bindPopup('📍 Tu ubicación actual')
+                                .openPopup();
+                        }
+                        
+                        // Update address input with reverse geocoding (simplified)
+                        const addressInput = document.getElementById('addressInput');
+                        if (addressInput) {
+                            addressInput.value = `Lat: ${latitude.toFixed(4)}, Lng: ${longitude.toFixed(4)}`;
+                        }
+                        
+                        // Add message to chat
+                        this.addMessage('ai', `📍 Ubicación detectada. Buscando farmacias cerca de ti...`);
+                        
+                        // Send the coordinates message directly to the AI agent
+                        const coordinatesMessage = `Buscar farmacias cerca de mi ubicación: ${latitude.toFixed(4)}, ${longitude.toFixed(4)}`;
+                        this.addMessage('user', coordinatesMessage);
+                        
+                        // Send the message directly to the AI agent without using the input field
+                        setTimeout(() => {
+                            this.sendCoordinatesMessage(coordinatesMessage);
+                        }, 500);
+                        
+                        // Reset button
+                        if (useLocationBtn) {
+                            useLocationBtn.disabled = false;
+                            useLocationBtn.textContent = '📍 Usar mi ubicación';
+                        }
+                    },
+                    (error) => {
+                        console.error('Error getting location:', error);
+                        this.addMessage('ai', 'No pude obtener tu ubicación. Puedes ingresarla manualmente.');
+                        
+                        // Reset button
+                        if (useLocationBtn) {
+                            useLocationBtn.disabled = false;
+                            useLocationBtn.textContent = '📍 Usar mi ubicación';
+                        }
+                    },
+                    {
+                        enableHighAccuracy: true,
+                        timeout: 10000,
+                        maximumAge: 60000
+                    }
+                );
+            }
+            
+            handleQuickAction(action) {
+                switch(action) {
+                    case 'open-now':
+                        this.addMessage('user', 'Buscar farmacias abiertas ahora');
+                        this.sendMessage();
+                        break;
+                    case 'medications':
+                        this.addMessage('user', 'Información sobre medicamentos');
+                        this.sendMessage();
+                        break;
+                    case 'nearest':
+                        this.useCurrentLocation();
+                        break;
+                }
+            }
+        }
+        
+        // Start the app when DOM is ready
+        document.addEventListener('DOMContentLoaded', () => {
+            // Ensure page starts at the top
+            window.scrollTo(0, 0);
+            document.documentElement.scrollTop = 0;
+            document.body.scrollTop = 0;
+            
+            window.app = new App();
+        });
+    </script>
+    
+    <!-- Service Worker Registration - Disabled for now -->
+    <!--
+    <script>
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('/sw.js')
+                    .then(registration => {
+                        console.log('SW registered: ', registration);
+                    })
+                    .catch(registrationError => {
+                        console.log('SW registration failed: ', registrationError);
+                    });
+            });
+        }
+    </script>
+    -->
+
+    <!-- Footer with Status Link -->
+    <footer style="
+        position: fixed;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        padding: 8px 16px;
+        font-size: 12px;
+        text-align: center;
+        box-shadow: 0 -2px 10px rgba(0,0,0,0.1);
+        z-index: 1000;
+        border-top: 1px solid rgba(255,255,255,0.1);
+    ">
+        <div style="display: flex; justify-content: center; align-items: center; gap: 16px;">
+            <span>🏥 Farmacias Chile AI Assistant</span>
+            <span style="color: rgba(255,255,255,0.7);">|</span>
+            <a href="/status" style="
+                color: white;
+                text-decoration: none;
+                padding: 4px 8px;
+                border-radius: 4px;
+                background: rgba(255,255,255,0.1);
+                transition: all 0.3s ease;
+                font-weight: 500;
+            " 
+            onmouseover="this.style.background='rgba(255,255,255,0.2)'; this.style.transform='translateY(-1px)'" 
+            onmouseout="this.style.background='rgba(255,255,255,0.1)'; this.style.transform='translateY(0)'">
+                📊 System Status
+            </a>
+            <span style="color: rgba(255,255,255,0.7);">|</span>
+            <span style="color: rgba(255,255,255,0.8); font-size: 11px;">v2.0</span>
+        </div>
+    </footer>
+
+    <!-- Add some bottom padding to main content to avoid footer overlap -->
+    <style>
+        body {
+            padding-bottom: 50px;
+        }
+        
+        .chat-container {
+            margin-bottom: 60px;
+        }
+        
+        @media (max-width: 768px) {
+            body {
+                padding-bottom: 60px;
+            }
+            
+            .chat-container {
+                margin-bottom: 70px;
+            }
+        }
+    </style>
+
+</body>
+</html>
