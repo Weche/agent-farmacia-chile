@@ -41,6 +41,35 @@
             opacity: 0.9;
         }
 
+        .chat-button-container {
+            margin-top: 20px;
+        }
+
+        .chat-button {
+            display: inline-block;
+            background: linear-gradient(45deg, #28a745, #20c997);
+            color: white;
+            text-decoration: none;
+            padding: 12px 25px;
+            border-radius: 25px;
+            font-size: 1.1em;
+            font-weight: 600;
+            box-shadow: 0 4px 15px rgba(40, 167, 69, 0.3);
+            transition: all 0.3s ease;
+            border: 2px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .chat-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(40, 167, 69, 0.4);
+            background: linear-gradient(45deg, #218838, #1ba582);
+            border-color: rgba(255, 255, 255, 0.3);
+        }
+
+        .chat-button:active {
+            transform: translateY(0);
+        }
+
         .search-section {
             background: white;
             border-radius: 15px;
@@ -247,6 +276,11 @@
         <div class="header">
             <h1>🏥 Buscador de Farmacias</h1>
             <p>Encuentra farmacias de turno en Chile</p>
+            <div class="chat-button-container">
+                <a href="/chat" class="chat-button" title="Chat con IA para consultas">
+                    💬 Chat IA
+                </a>
+            </div>
         </div>
 
         <div class="search-section">

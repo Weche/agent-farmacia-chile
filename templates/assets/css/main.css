@@ -820,6 +820,13 @@ body {
     color: white;
 }
 
+/* AI Response Content Wrapper */
+.ai-response-content {
+    margin: 0;
+    line-height: 1.5;
+    color: var(--text-primary);
+}
+
 .message-time-main {
     font-size: var(--text-xs);
     color: var(--text-muted);
@@ -829,6 +836,172 @@ body {
 
 .user-message-main .message-time-main {
     color: rgba(255, 255, 255, 0.8);
+}
+
+/* 🔗 ENHANCED CHAT LINKS AND PHARMACY INFO STYLES */
+
+/* Pharmacy Link Styles */
+.message-content-main .pharmacy-link,
+.message-content-main .phone-link,
+.ai-response-content .pharmacy-link,
+.ai-response-content .phone-link {
+    color: var(--color-accent);
+    text-decoration: none;
+    font-weight: 600;
+    padding: 4px 8px;
+    border-radius: 6px;
+    background: rgba(76, 175, 80, 0.1);
+    border: 1px solid rgba(76, 175, 80, 0.2);
+    display: inline-block;
+    transition: all 0.2s ease;
+    margin: 0 2px;
+}
+
+.message-content-main .pharmacy-link:hover,
+.message-content-main .phone-link:hover,
+.ai-response-content .pharmacy-link:hover,
+.ai-response-content .phone-link:hover {
+    background: var(--color-accent);
+    color: white;
+    transform: translateY(-1px);
+    box-shadow: 0 2px 8px rgba(76, 175, 80, 0.3);
+}
+
+/* Map Link Enhancement */
+.message-content-main .map-link,
+.ai-response-content .map-link {
+    display: inline-block;
+    margin: 8px 0;
+    padding: 8px 12px;
+    background: linear-gradient(135deg, #1976D2, #1565C0);
+    border-radius: 8px;
+    color: white !important;
+    font-weight: 600;
+}
+
+.message-content-main .map-link a,
+.ai-response-content .map-link a {
+    color: white !important;
+    text-decoration: none;
+}
+
+.message-content-main .map-link:hover,
+.ai-response-content .map-link:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(25, 118, 210, 0.4);
+}
+
+/* Pharmacy Information Blocks */
+.message-content-main .pharmacy-name,
+.ai-response-content .pharmacy-name {
+    display: block;
+    font-size: 1.1em;
+    font-weight: 700;
+    color: var(--color-primary);
+    margin: 12px 0 6px 0;
+    padding: 6px 0;
+    border-bottom: 2px solid rgba(76, 175, 80, 0.2);
+}
+
+.message-content-main .pharmacy-address,
+.ai-response-content .pharmacy-address {
+    display: block;
+    margin: 4px 0;
+    color: var(--text-muted);
+    font-style: italic;
+}
+
+.message-content-main .pharmacy-phone,
+.ai-response-content .pharmacy-phone {
+    display: block;
+    margin: 4px 0;
+    color: var(--color-accent);
+    font-weight: 500;
+}
+
+.message-content-main .pharmacy-hours,
+.ai-response-content .pharmacy-hours {
+    display: block;
+    margin: 4px 0;
+    padding: 4px 8px;
+    background: rgba(255, 193, 7, 0.1);
+    border-left: 3px solid #FFC107;
+    border-radius: 4px;
+    font-weight: 500;
+}
+
+/* Emergency Indicators */
+.message-content-main .emergency-indicator,
+.ai-response-content .emergency-indicator {
+    display: inline-block;
+    background: linear-gradient(135deg, #F44336, #D32F2F);
+    color: white;
+    font-weight: 700;
+    padding: 4px 8px;
+    border-radius: 6px;
+    margin: 0 4px;
+    animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+    0% { opacity: 1; }
+    50% { opacity: 0.7; }
+    100% { opacity: 1; }
+}
+
+/* Phone Number Clicking Enhancement */
+.message-content-main a[href^="tel:"],
+.ai-response-content a[href^="tel:"] {
+    background: linear-gradient(135deg, #4CAF50, #45a049);
+    color: white !important;
+    text-decoration: none;
+    padding: 6px 12px;
+    border-radius: 20px;
+    font-weight: 600;
+    display: inline-block;
+    margin: 4px 0;
+    transition: all 0.3s ease;
+}
+
+.message-content-main a[href^="tel:"]:hover,
+.ai-response-content a[href^="tel:"]:hover {
+    transform: scale(1.05);
+    box-shadow: 0 4px 12px rgba(76, 175, 80, 0.4);
+}
+
+/* Map Link Clicking Enhancement */
+.message-content-main a[href*="maps"],
+.ai-response-content a[href*="maps"] {
+    background: linear-gradient(135deg, #2196F3, #1976D2);
+    color: white !important;
+    text-decoration: none;
+    padding: 8px 16px;
+    border-radius: 25px;
+    font-weight: 600;
+    display: inline-block;
+    margin: 8px 4px;
+    transition: all 0.3s ease;
+    box-shadow: 0 2px 8px rgba(33, 150, 243, 0.3);
+}
+
+.message-content-main a[href*="maps"]:hover,
+.ai-response-content a[href*="maps"]:hover {
+    transform: translateY(-2px) scale(1.02);
+    box-shadow: 0 6px 20px rgba(33, 150, 243, 0.5);
+}
+
+/* General Link Styling for Chat */
+.message-content-main a,
+.ai-response-content a {
+    color: var(--color-accent);
+    text-decoration: none;
+    border-bottom: 1px solid transparent;
+    transition: all 0.2s ease;
+}
+
+.message-content-main a:hover,
+.ai-response-content a:hover {
+    border-bottom-color: var(--color-accent);
 }
 
 .chat-input-main {
@@ -855,6 +1028,27 @@ body {
     outline: none;
     border-color: var(--color-accent);
     box-shadow: 0 0 0 3px rgba(76, 175, 80, 0.1);
+}
+
+/* --- Quick fix: ensure AI response links are clickable and mitigate overlay blocking --- */
+/* Keep this minimal and scoped to chat components */
+.ai-response-content a {
+  pointer-events: auto !important;
+}
+
+/* If decorative overlays exist and accidentally sit above the chat, allow clicks through them.
+   These classes are commonly used for loading/backdrop overlays; setting pointer-events to none
+   avoids blocking the chat UI. If you rely on overlay click-capture elsewhere, we can scope further. */
+.loading-overlay,
+.card-overlay,
+.overlay,
+.modal-backdrop {
+  pointer-events: none !important;
+}
+
+/* Ensure chat window sits above most overlays */
+.chat-window {
+  z-index: 9999 !important;
 }
 
 .chat-send-main {

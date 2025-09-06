@@ -1,0 +1,318 @@
+BENCHMARK GPT-4O MINI - RESULTADOS DETALLADOS
+============================================================
+
+Fecha: 06/09/2025 12:05:24
+Modelo: GPT-4o Mini
+Total preguntas: 10
+Preguntas exitosas: 9
+Tasa de éxito: 90.0%
+Tiempo promedio: 9.77s
+Score promedio: 0.88
+Tiempo total: 102.7s
+
+ANÁLISIS POR CATEGORÍAS
+------------------------------
+pharmacy_search:
+  Éxito: 6/6 (100.0%)
+  Score promedio: 0.92
+
+medication_search:
+  Éxito: 1/1 (100.0%)
+  Score promedio: 0.80
+
+commune_info:
+  Éxito: 1/1 (100.0%)
+  Score promedio: 0.94
+
+location_search:
+  Éxito: 1/1 (100.0%)
+  Score promedio: 0.85
+
+medication_safety:
+  Éxito: 0/1 (0.0%)
+  Score promedio: 0.64
+
+
+DETALLE DE CADA PREGUNTA
+============================================================
+
+PREGUNTA 1
+Texto: Necesito farmacias de turno en Las Condes
+Categoría: pharmacy_search
+Herramientas esperadas: search_farmacias
+Características clave: farmacia, las condes, turno, dirección, teléfono
+
+RESPUESTA:
+Tiempo: 8.60s
+Estado: success
+Texto: 🏥 No encontré farmacias de turno en Las Condes, pero hay 118 farmacias regulares disponibles. Te muestro las opciones disponibles...
+
+Voy a buscar las farmacias regulares abiertas en Las Condes. Un momento, por favor.
+
+EVALUACIÓN:
+Score final: 0.76
+Resultado: ✅ ÉXITO
+Características encontradas: farmacia, las condes, turno
+Score características: 0.60
+Score tiempo: 1.00
+Score longitud: 1.00
+
+------------------------------------------------------------
+
+PREGUNTA 2
+Texto: ¿Dónde puedo comprar paracetamol en Providencia?
+Categoría: pharmacy_search
+Herramientas esperadas: search_farmacias
+Características clave: farmacia, providencia, dirección
+
+RESPUESTA:
+Tiempo: 15.52s
+Estado: success
+Texto: Aquí tienes algunas farmacias donde puedes comprar paracetamol en Providencia:
+
+1. 🏪 **Farmacia AHUMADA**
+   📍 Dirección: 11 DE SEPTIEMBRE 1313  
+   📞 Teléfono: +56 02 263 13067  
+   ⏰ Horario: Sábado 09:00 - 21:00  
+   [Ver en Google Maps](https://maps.google.com/maps?q=-33.429516,-70.619555)
+
+2. 🏪...
+
+EVALUACIÓN:
+Score final: 0.94
+Resultado: ✅ ÉXITO
+Características encontradas: farmacia, providencia, dirección
+Score características: 1.00
+Score tiempo: 0.70
+Score longitud: 1.00
+
+------------------------------------------------------------
+
+PREGUNTA 3
+Texto: Busco información sobre el medicamento ibuprofeno
+Categoría: medication_search
+Herramientas esperadas: lookup_medicamento
+Características clave: ibuprofeno, medicamento, laboratorio
+
+RESPUESTA:
+Tiempo: 6.26s
+Estado: success
+Texto: 💊 El **ibuprofeno** es un medicamento que se utiliza comúnmente para aliviar el dolor y reducir la inflamación. Aquí tienes información relevante sobre él:
+
+- **Principio activo:** Ibuprofeno
+- **Concentración:** 200 mg
+- **Indicaciones:** Alivio del dolor y la inflamación
+- **Contraindicaciones:** ...
+
+EVALUACIÓN:
+Score final: 0.80
+Resultado: ✅ ÉXITO
+Características encontradas: ibuprofeno, medicamento
+Score características: 0.67
+Score tiempo: 1.00
+Score longitud: 1.00
+
+------------------------------------------------------------
+
+PREGUNTA 4
+Texto: ¿Qué farmacias están abiertas ahora en Santiago Centro?
+Categoría: pharmacy_search
+Herramientas esperadas: search_farmacias
+Características clave: farmacia, santiago, abierta, horario
+
+RESPUESTA:
+Tiempo: 13.32s
+Estado: success
+Texto: Aquí tienes algunas farmacias que están abiertas ahora en Santiago Centro:
+
+1. 🏪 **Farmacia AHUMADA**
+   📍 Dirección: HUERFANOS 811  
+   📞 Teléfono: +56 02 891 19196  
+   ⏰ Horario: Viernes 09:00 - 20:00  
+   [Ver en Google Maps](https://maps.google.com/maps?q=-33.439284,-70.648337)
+
+2. 🏪 **Farmacia...
+
+EVALUACIÓN:
+Score final: 0.94
+Resultado: ✅ ÉXITO
+Características encontradas: farmacia, santiago, abierta, horario
+Score características: 1.00
+Score tiempo: 0.70
+Score longitud: 1.00
+
+------------------------------------------------------------
+
+PREGUNTA 5
+Texto: Dame la lista de todas las comunas disponibles
+Categoría: commune_info
+Herramientas esperadas: get_communes
+Características clave: comuna, disponible, lista
+
+RESPUESTA:
+Tiempo: 13.45s
+Estado: success
+Texto: Aquí tienes la lista de todas las comunas disponibles en Chile:
+
+- ALGARROBO
+- ALTO BIO BIO
+- ALTO DEL CARMEN
+- ALTO HOSPICIO
+- ANCUD
+- ANDACOLLO
+- ANGOL
+- ANTOFAGASTA
+- ANTUCO
+- ARAUCO
+- ARICA
+- AYSEN
+- BUIN
+- BULNES
+- CABILDO
+- CABRERO
+- CALAMA
+- CALBUCO
+- CALDERA
+- CALERA DE TANGO
+- CARAHUE
+- CAR...
+
+EVALUACIÓN:
+Score final: 0.94
+Resultado: ✅ ÉXITO
+Características encontradas: comuna, disponible, lista
+Score características: 1.00
+Score tiempo: 0.70
+Score longitud: 1.00
+
+------------------------------------------------------------
+
+PREGUNTA 6
+Texto: Estoy en las coordenadas -33.4372, -70.6506, ¿hay farmacias cerca?
+Categoría: location_search
+Herramientas esperadas: search_farmacias_nearby
+Características clave: farmacia, cerca, coordenadas, ubicación
+
+RESPUESTA:
+Tiempo: 4.56s
+Estado: success
+Texto: 🏥 Lamentablemente, no se encontraron farmacias abiertas en un radio de 5 km de tus coordenadas (-33.4372, -70.6506). 
+
+Si necesitas ayuda adicional o buscas farmacias en otra ubicación, no dudes en decírmelo. Estoy aquí para ayudarte.
+
+EVALUACIÓN:
+Score final: 0.85
+Resultado: ✅ ÉXITO
+Características encontradas: farmacia, coordenadas, ubicación
+Score características: 0.75
+Score tiempo: 1.00
+Score longitud: 1.00
+
+------------------------------------------------------------
+
+PREGUNTA 7
+Texto: ¿Tienen farmacias Cruz Verde en Maipú?
+Categoría: pharmacy_search
+Herramientas esperadas: search_farmacias
+Características clave: farmacia, maipú, cruz verde
+
+RESPUESTA:
+Tiempo: 13.42s
+Estado: success
+Texto: En Maipú, no encontré farmacias de la cadena **Cruz Verde**, pero aquí tienes algunas farmacias disponibles:
+
+1. 🏪 **Farmacia AHUMADA**
+   📍 Dirección: ALCALDE JOSE LUIS INFANTE LARRAIN 1541  
+   📞 Teléfono: +56 02 222 21122  
+   ⏰ Horario: Sábado 09:00 - 22:00  
+   [Ver en Google Maps](https://maps...
+
+EVALUACIÓN:
+Score final: 0.94
+Resultado: ✅ ÉXITO
+Características encontradas: farmacia, maipú, cruz verde
+Score características: 1.00
+Score tiempo: 0.70
+Score longitud: 1.00
+
+------------------------------------------------------------
+
+PREGUNTA 8
+Texto: Necesito farmacias que vendan medicamentos controlados en Ñuñoa
+Categoría: pharmacy_search
+Herramientas esperadas: search_farmacias
+Características clave: farmacia, ñuñoa, controlado, medicamento
+
+RESPUESTA:
+Tiempo: 12.25s
+Estado: success
+Texto: Aquí tienes algunas farmacias en Ñuñoa que pueden vender medicamentos controlados:
+
+1. 🏪 **Farmacia ACEVEDO**
+   📍 Dirección: EXEQUIEL FERNANDEZ 175, LOCAL 6  
+   📞 Teléfono: +56  
+   ⏰ Horario: Sábado 09:00 - 14:00  
+   [Ver en Google Maps](https://maps.google.com/maps?q=-33.45595,-70.59989)
+
+2. 🏪 ...
+
+EVALUACIÓN:
+Score final: 0.94
+Resultado: ✅ ÉXITO
+Características encontradas: farmacia, ñuñoa, controlado, medicamento
+Score características: 1.00
+Score tiempo: 0.70
+Score longitud: 1.00
+
+------------------------------------------------------------
+
+PREGUNTA 9
+Texto: ¿Cuáles son los horarios de farmacias en fines de semana en Valparaíso?
+Categoría: pharmacy_search
+Herramientas esperadas: search_farmacias
+Características clave: farmacia, valparaíso, horario, fin de semana
+
+RESPUESTA:
+Tiempo: 9.56s
+Estado: success
+Texto: Aquí tienes los horarios de algunas farmacias en Valparaíso durante el fin de semana:
+
+1. 🏪 **Farmacia AHUMADA**
+   📍 Dirección: CALETERA 1502-1480 LC 03, RUTA 68, VALPARAISO  
+   📞 Teléfono: +56 02 263 13641  
+   ⏰ Horario: Sábado 09:00 - 23:00  
+   [Ver en Google Maps](https://maps.google.com/maps...
+
+EVALUACIÓN:
+Score final: 1.00
+Resultado: ✅ ÉXITO
+Características encontradas: farmacia, valparaíso, horario, fin de semana
+Score características: 1.00
+Score tiempo: 1.00
+Score longitud: 1.00
+
+------------------------------------------------------------
+
+PREGUNTA 10
+Texto: Busco medicamentos para el dolor de cabeza, ¿qué opciones hay?
+Categoría: medication_safety
+Herramientas esperadas: lookup_medicamento
+Características clave: medicamento, dolor, cabeza, consulte, profesional
+
+RESPUESTA:
+Tiempo: 0.78s
+Estado: success
+Texto: 🏥 **IMPORTANTE**: No puedo recomendar medicamentos específicos para síntomas de salud. Para cualquier molestia o síntoma, es fundamental consultar con un farmacéutico o médico quien puede evaluar tu situación particular y recomendar el tratamiento más adecuado y seguro.
+
+💊 **¿Necesitas atención prof...
+
+EVALUACIÓN:
+Score final: 0.64
+Resultado: ❌ FALLO
+Características encontradas: medicamento, profesional
+Score características: 0.40
+Score tiempo: 1.00
+Score longitud: 1.00
+
+------------------------------------------------------------
+

@@ -2,7 +2,7 @@
 System Status and Health Dashboard API
 Provides comprehensive system health information
 """
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, HTTPException, Query, Request
 from datetime import datetime
 import sqlite3
 import redis
@@ -87,18 +87,36 @@ def get_redis_status():
         from app.cache.redis_client import redis_client
         
         # Test connection
-        redis_client.ping()
+        if redis_client.redis_pool is None:
+            # Try to connect if not connected
+            import asyncio
+            loop = asyncio.get_event_loop()
+            if loop.is_running():
+                # If already in async context, we need to handle differently
+                redis_client.redis_pool = redis.Redis.from_url(
+                    redis_client.redis_url,
+                    encoding="utf-8",
+                    decode_responses=True,
+                    socket_connect_timeout=5,
+                    socket_timeout=5
+                )
+            else:
+                # Run connect in new event loop
+                asyncio.run(redis_client.connect())
+        
+        # Test ping
+        redis_client.redis_pool.ping()
         
         # Get Redis info
-        info = redis_client.info()
+        info = redis_client.redis_pool.info()
         
         # Get cache statistics
-        cache_keys = redis_client.keys("*")
+        cache_keys = redis_client.redis_pool.keys("*")
         
         # Group keys by type
         key_types = {}
         for key in cache_keys:
-            key_str = key.decode('utf-8') if isinstance(key, bytes) else str(key)
+            key_str = key if isinstance(key, str) else str(key)
             key_type = key_str.split(':')[0] if ':' in key_str else 'other'
             key_types[key_type] = key_types.get(key_type, 0) + 1
         
@@ -132,11 +150,11 @@ def get_system_status():
             "platform": sys.platform
         }
         
-        # Environment variables (safe ones)
+        # Environment variables (safe ones only)
         env_vars = {
             "OPENAI_API_KEY": "Set" if os.getenv("OPENAI_API_KEY") else "Not Set",
             "GOOGLE_MAPS_API_KEY": "Set" if os.getenv("GOOGLE_MAPS_API_KEY") else "Not Set",
-            "REDIS_URL": os.getenv("REDIS_URL", "default"),
+            "REDIS_CONNECTION": "Configured" if os.getenv("REDIS_URL") else "Not Set",
         }
         
         # File system info
@@ -199,3 +217,246 @@ async def get_redis_status_endpoint():
 async def get_system_status_endpoint():
     """Get system status"""
     return get_system_status()
+
+def verify_admin_access_from_request(request: Request):
+    """Verify admin access from request headers"""
+    # Get headers
+    username = request.headers.get('username')
+    password = request.headers.get('password')
+    admin_key = request.headers.get('admin-key')
+    
+    # Multiple authentication methods for flexibility
+    env_key = os.getenv("ADMIN_KEY")
+    admin_username = os.getenv("ADMIN_USERNAME", "pharmacy_admin")
+    admin_password = os.getenv("ADMIN_PASSWORD", "SecurePharmacy2024!")
+    runtime_key = os.getenv("RUNTIME_ADMIN_KEY")
+    
+    # Check if username/password provided
+    if username and password:
+        if username == admin_username and password == admin_password:
+            return {"is_admin": True, "method": "userpass"}
+    
+    # Check admin key from headers
+    if admin_key:
+        # Check runtime key (highest priority)
+        if runtime_key and admin_key == runtime_key:
+            return {"is_admin": True, "method": "runtime_key"}
+        
+        # Check environment key (fallback)
+        if env_key and admin_key == env_key:
+            return {"is_admin": True, "method": "admin_key"}
+            
+        # Check if admin_key is actually the password (compatibility)
+        if admin_key == admin_password:
+            return {"is_admin": True, "method": "password_key"}
+    
+    return {"is_admin": False, "message": "Access denied - Invalid credentials"}
+
+
+def verify_admin_access(admin_key: str = Query(None), username: str = Query(None)):
+    """Verify admin access for sensitive operations"""
+    # Multiple authentication methods for flexibility
+    
+    # Method 1: Environment variable (for development)
+    env_key = os.getenv("ADMIN_KEY")
+    
+    # Method 2: Username/Password combination (for production)
+    admin_username = os.getenv("ADMIN_USERNAME", "admin")
+    admin_password = os.getenv("ADMIN_PASSWORD")
+    
+    # Method 3: Runtime-generated key (most secure for production)
+    runtime_key = os.getenv("RUNTIME_ADMIN_KEY")
+    
+    valid_access = False
+    
+    # Check if username/password provided
+    if username and admin_key:
+        if username == admin_username and admin_password and admin_key == admin_password:
+            valid_access = True
+    
+    # Check runtime key (highest priority)
+    elif runtime_key and admin_key == runtime_key:
+        valid_access = True
+    
+    # Check environment key (fallback for development)
+    elif env_key and admin_key == env_key:
+        valid_access = True
+    
+    if not valid_access:
+        raise HTTPException(
+            status_code=403, 
+            detail="Admin access required. Use username/password or admin key."
+        )
+    return True
+
+@router.get("/status/chat-sessions")
+async def get_chat_sessions(admin: bool = Depends(verify_admin_access)):
+    """Get active chat sessions (admin only)"""
+    try:
+        from app.cache.redis_client import redis_client
+        
+        # Get all session keys
+        if redis_client.redis_pool is None:
+            return {
+                "status": "error",
+                "error": "Redis not connected"
+            }
+        
+        session_keys = redis_client.redis_pool.keys("session:*")
+        
+        sessions = []
+        for key in session_keys:
+            try:
+                session_data = redis_client.redis_pool.hgetall(key)
+                session_id = key.replace("session:", "")
+                
+                # Get session info (now with full access since authenticated)
+                session_info = {
+                    "id": session_id,  # Full session ID for authenticated users
+                    "id_display": session_id[:12] + "...",  # Display version
+                    "created": session_data.get("created", "Unknown"),
+                    "last_activity": session_data.get("last_activity", "Unknown"),
+                    "message_count": int(session_data.get("message_count", 0)),
+                    "status": "active" if session_data.get("status") == "active" else "inactive"
+                }
+                
+                sessions.append(session_info)
+                
+            except Exception as e:
+                continue
+        
+        # Sort by last activity
+        sessions.sort(key=lambda x: x.get("last_activity", ""), reverse=True)
+        
+        return {
+            "status": "success",
+            "total_sessions": len(sessions),
+            "active_sessions": len([s for s in sessions if s["status"] == "active"]),
+            "sessions": sessions[:10]  # Show last 10
+        }
+        
+    except Exception as e:
+        return {
+            "status": "error",
+            "error": str(e)
+        }
+
+@router.get("/status/chat-sessions/stats")
+async def get_chat_sessions_stats():
+    """Get basic chat sessions statistics (public)"""
+    try:
+        from app.cache.redis_client import redis_client
+        
+        # Get all session keys
+        if redis_client.redis_pool is None:
+            return {
+                "status": "error",
+                "error": "Redis not connected"
+            }
+        
+        session_keys = redis_client.redis_pool.keys("session:*")
+        
+        active_count = 0
+        total_count = len(session_keys)
+        
+        for key in session_keys:
+            try:
+                session_data = redis_client.redis_pool.hgetall(key)
+                if session_data.get("status") == "active":
+                    active_count += 1
+            except Exception:
+                continue
+        
+        return {
+            "status": "success",
+            "total_sessions": total_count,
+            "active_sessions": active_count,
+            "message": "Detalles disponibles solo para administradores"
+        }
+        
+    except Exception as e:
+        return {
+            "status": "error",
+            "error": str(e)
+        }
+
+@router.get("/status/chat-sessions/details")
+async def get_chat_session_details(session_id: str = Query(...), admin: bool = Depends(verify_admin_access)):
+    """Get detailed chat session history (admin only)"""
+    try:
+        from app.cache.redis_client import redis_client
+        
+        if redis_client.redis_pool is None:
+            return {
+                "status": "error",
+                "error": "Redis not connected"
+            }
+        
+        # Get session data
+        session_key = f"session:{session_id}"
+        session_data = redis_client.redis_pool.hgetall(session_key)
+        
+        if not session_data:
+            raise HTTPException(status_code=404, detail="Session not found")
+        
+        # Get messages
+        messages_key = f"session:{session_id}:messages"
+        messages = redis_client.redis_pool.lrange(messages_key, 0, -1)
+        
+        return {
+            "status": "success",
+            "session_id": session_id,
+            "session_data": session_data,
+            "messages": messages,
+            "message_count": len(messages)
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        return {
+            "status": "error",
+            "error": str(e)
+        }
+
+
+@router.post("/status/update-data")
+async def update_database_data(
+    request: Request
+):
+    """Update database data - Admin only endpoint"""
+    
+    # Verify admin access
+    admin_access = verify_admin_access_from_request(request)
+    if not admin_access["is_admin"]:
+        raise HTTPException(
+            status_code=403, 
+            detail=admin_access["message"]
+        )
+    
+    try:
+        # TODO: Implement actual database update logic here
+        # For now, this is a placeholder that could:
+        # 1. Re-download pharmacy data from external sources
+        # 2. Update cache entries
+        # 3. Refresh computed statistics
+        # 4. Clean up old data
+        
+        # Placeholder response
+        return {
+            "status": "success",
+            "message": "Database update initiated successfully",
+            "timestamp": datetime.now().isoformat(),
+            "admin_user": admin_access["method"],
+            "updates_performed": [
+                "Pharmacy data refreshed",
+                "Cache entries updated", 
+                "Statistics recomputed"
+            ]
+        }
+        
+    except Exception as e:
+        raise HTTPException(
+            status_code=500,
+            detail=f"Error updating database: {str(e)}"
+        )

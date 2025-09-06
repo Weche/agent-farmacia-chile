@@ -1,0 +1,338 @@
+BENCHMARK GPT-4O MINI - RESULTADOS DETALLADOS
+============================================================
+
+Fecha: 06/09/2025 12:00:31
+Modelo: GPT-4o Mini
+Total preguntas: 10
+Preguntas exitosas: 5
+Tasa de éxito: 50.0%
+Tiempo promedio: 0.01s
+Score promedio: 0.62
+Tiempo total: 5.1s
+
+ANÁLISIS POR CATEGORÍAS
+------------------------------
+pharmacy_search:
+  Éxito: 5/6 (83.3%)
+  Score promedio: 0.74
+
+medication_search:
+  Éxito: 0/1 (0.0%)
+  Score promedio: 0.40
+
+commune_info:
+  Éxito: 0/1 (0.0%)
+  Score promedio: 0.40
+
+location_search:
+  Éxito: 0/1 (0.0%)
+  Score promedio: 0.55
+
+medication_safety:
+  Éxito: 0/1 (0.0%)
+  Score promedio: 0.40
+
+
+DETALLE DE CADA PREGUNTA
+============================================================
+
+PREGUNTA 1
+Texto: Necesito farmacias de turno en Las Condes
+Categoría: pharmacy_search
+Herramientas esperadas: search_farmacias
+Características clave: farmacia, las condes, turno, dirección, teléfono
+
+RESPUESTA:
+Tiempo: 0.01s
+Estado: success
+Texto: Encontré 3 farmacias de turno en Maipú:
+
+1. 🏪 FARMAQUINTA
+📍 Dirección: AVENIDA VALPARAISO 1621, VILLA ALEMANA
+📞 Teléfono: +56 79 859 135
+⏰ Horario: Viernes 00:00 - 23:59
+🌐 [Ver en Google Maps](https://maps.google.com/maps?q=-33.0449112,-71.3856936)
+
+2. 🏪 BELLFARMA  
+📍 Dirección: HUANHUALI 1331, VILL...
+
+EVALUACIÓN:
+Score final: 0.88
+Resultado: ✅ ÉXITO
+Características encontradas: farmacia, turno, dirección, teléfono
+Score características: 0.80
+Score tiempo: 1.00
+Score longitud: 1.00
+
+------------------------------------------------------------
+
+PREGUNTA 2
+Texto: ¿Dónde puedo comprar paracetamol en Providencia?
+Categoría: pharmacy_search
+Herramientas esperadas: search_farmacias
+Características clave: farmacia, providencia, dirección
+
+RESPUESTA:
+Tiempo: 0.00s
+Estado: success
+Texto: Encontré 3 farmacias de turno en Maipú:
+
+1. 🏪 FARMAQUINTA
+📍 Dirección: AVENIDA VALPARAISO 1621, VILLA ALEMANA
+📞 Teléfono: +56 79 859 135
+⏰ Horario: Viernes 00:00 - 23:59
+🌐 [Ver en Google Maps](https://maps.google.com/maps?q=-33.0449112,-71.3856936)
+
+2. 🏪 BELLFARMA  
+📍 Dirección: HUANHUALI 1331, VILL...
+
+EVALUACIÓN:
+Score final: 0.80
+Resultado: ✅ ÉXITO
+Características encontradas: farmacia, dirección
+Score características: 0.67
+Score tiempo: 1.00
+Score longitud: 1.00
+
+------------------------------------------------------------
+
+PREGUNTA 3
+Texto: Busco información sobre el medicamento ibuprofeno
+Categoría: medication_search
+Herramientas esperadas: lookup_medicamento
+Características clave: ibuprofeno, medicamento, laboratorio
+
+RESPUESTA:
+Tiempo: 0.02s
+Estado: success
+Texto: Encontré 3 farmacias de turno en Maipú:
+
+1. 🏪 FARMAQUINTA
+📍 Dirección: AVENIDA VALPARAISO 1621, VILLA ALEMANA
+📞 Teléfono: +56 79 859 135
+⏰ Horario: Viernes 00:00 - 23:59
+🌐 [Ver en Google Maps](https://maps.google.com/maps?q=-33.0449112,-71.3856936)
+
+2. 🏪 BELLFARMA  
+📍 Dirección: HUANHUALI 1331, VILL...
+
+EVALUACIÓN:
+Score final: 0.40
+Resultado: ❌ FALLO
+Características encontradas: 
+Score características: 0.00
+Score tiempo: 1.00
+Score longitud: 1.00
+
+------------------------------------------------------------
+
+PREGUNTA 4
+Texto: ¿Qué farmacias están abiertas ahora en Santiago Centro?
+Categoría: pharmacy_search
+Herramientas esperadas: search_farmacias
+Características clave: farmacia, santiago, abierta, horario
+
+RESPUESTA:
+Tiempo: 0.02s
+Estado: success
+Texto: Encontré 3 farmacias de turno en Maipú:
+
+1. 🏪 FARMAQUINTA
+📍 Dirección: AVENIDA VALPARAISO 1621, VILLA ALEMANA
+📞 Teléfono: +56 79 859 135
+⏰ Horario: Viernes 00:00 - 23:59
+🌐 [Ver en Google Maps](https://maps.google.com/maps?q=-33.0449112,-71.3856936)
+
+2. 🏪 BELLFARMA  
+📍 Dirección: HUANHUALI 1331, VILL...
+
+EVALUACIÓN:
+Score final: 0.70
+Resultado: ✅ ÉXITO
+Características encontradas: farmacia, horario
+Score características: 0.50
+Score tiempo: 1.00
+Score longitud: 1.00
+
+------------------------------------------------------------
+
+PREGUNTA 5
+Texto: Dame la lista de todas las comunas disponibles
+Categoría: commune_info
+Herramientas esperadas: get_communes
+Características clave: comuna, disponible, lista
+
+RESPUESTA:
+Tiempo: 0.02s
+Estado: success
+Texto: Encontré 3 farmacias de turno en Maipú:
+
+1. 🏪 FARMAQUINTA
+📍 Dirección: AVENIDA VALPARAISO 1621, VILLA ALEMANA
+📞 Teléfono: +56 79 859 135
+⏰ Horario: Viernes 00:00 - 23:59
+🌐 [Ver en Google Maps](https://maps.google.com/maps?q=-33.0449112,-71.3856936)
+
+2. 🏪 BELLFARMA  
+📍 Dirección: HUANHUALI 1331, VILL...
+
+EVALUACIÓN:
+Score final: 0.40
+Resultado: ❌ FALLO
+Características encontradas: 
+Score características: 0.00
+Score tiempo: 1.00
+Score longitud: 1.00
+
+------------------------------------------------------------
+
+PREGUNTA 6
+Texto: Estoy en las coordenadas -33.4372, -70.6506, ¿hay farmacias cerca?
+Categoría: location_search
+Herramientas esperadas: search_farmacias_nearby
+Características clave: farmacia, cerca, coordenadas, ubicación
+
+RESPUESTA:
+Tiempo: 0.03s
+Estado: success
+Texto: Encontré 3 farmacias de turno en Maipú:
+
+1. 🏪 FARMAQUINTA
+📍 Dirección: AVENIDA VALPARAISO 1621, VILLA ALEMANA
+📞 Teléfono: +56 79 859 135
+⏰ Horario: Viernes 00:00 - 23:59
+🌐 [Ver en Google Maps](https://maps.google.com/maps?q=-33.0449112,-71.3856936)
+
+2. 🏪 BELLFARMA  
+📍 Dirección: HUANHUALI 1331, VILL...
+
+EVALUACIÓN:
+Score final: 0.55
+Resultado: ❌ FALLO
+Características encontradas: farmacia
+Score características: 0.25
+Score tiempo: 1.00
+Score longitud: 1.00
+
+------------------------------------------------------------
+
+PREGUNTA 7
+Texto: ¿Tienen farmacias Cruz Verde en Maipú?
+Categoría: pharmacy_search
+Herramientas esperadas: search_farmacias
+Características clave: farmacia, maipú, cruz verde
+
+RESPUESTA:
+Tiempo: 0.00s
+Estado: success
+Texto: Encontré 3 farmacias de turno en Maipú:
+
+1. 🏪 FARMAQUINTA
+📍 Dirección: AVENIDA VALPARAISO 1621, VILLA ALEMANA
+📞 Teléfono: +56 79 859 135
+⏰ Horario: Viernes 00:00 - 23:59
+🌐 [Ver en Google Maps](https://maps.google.com/maps?q=-33.0449112,-71.3856936)
+
+2. 🏪 BELLFARMA  
+📍 Dirección: HUANHUALI 1331, VILL...
+
+EVALUACIÓN:
+Score final: 0.80
+Resultado: ✅ ÉXITO
+Características encontradas: farmacia, maipú
+Score características: 0.67
+Score tiempo: 1.00
+Score longitud: 1.00
+
+------------------------------------------------------------
+
+PREGUNTA 8
+Texto: Necesito farmacias que vendan medicamentos controlados en Ñuñoa
+Categoría: pharmacy_search
+Herramientas esperadas: search_farmacias
+Características clave: farmacia, ñuñoa, controlado, medicamento
+
+RESPUESTA:
+Tiempo: 0.02s
+Estado: success
+Texto: Encontré 3 farmacias de turno en Maipú:
+
+1. 🏪 FARMAQUINTA
+📍 Dirección: AVENIDA VALPARAISO 1621, VILLA ALEMANA
+📞 Teléfono: +56 79 859 135
+⏰ Horario: Viernes 00:00 - 23:59
+🌐 [Ver en Google Maps](https://maps.google.com/maps?q=-33.0449112,-71.3856936)
+
+2. 🏪 BELLFARMA  
+📍 Dirección: HUANHUALI 1331, VILL...
+
+EVALUACIÓN:
+Score final: 0.55
+Resultado: ❌ FALLO
+Características encontradas: farmacia
+Score características: 0.25
+Score tiempo: 1.00
+Score longitud: 1.00
+
+------------------------------------------------------------
+
+PREGUNTA 9
+Texto: ¿Cuáles son los horarios de farmacias en fines de semana en Valparaíso?
+Categoría: pharmacy_search
+Herramientas esperadas: search_farmacias
+Características clave: farmacia, valparaíso, horario, fin de semana
+
+RESPUESTA:
+Tiempo: 0.00s
+Estado: success
+Texto: Encontré 3 farmacias de turno en Maipú:
+
+1. 🏪 FARMAQUINTA
+📍 Dirección: AVENIDA VALPARAISO 1621, VILLA ALEMANA
+📞 Teléfono: +56 79 859 135
+⏰ Horario: Viernes 00:00 - 23:59
+🌐 [Ver en Google Maps](https://maps.google.com/maps?q=-33.0449112,-71.3856936)
+
+2. 🏪 BELLFARMA  
+📍 Dirección: HUANHUALI 1331, VILL...
+
+EVALUACIÓN:
+Score final: 0.70
+Resultado: ✅ ÉXITO
+Características encontradas: farmacia, horario
+Score características: 0.50
+Score tiempo: 1.00
+Score longitud: 1.00
+
+------------------------------------------------------------
+
+PREGUNTA 10
+Texto: Busco medicamentos para el dolor de cabeza, ¿qué opciones hay?
+Categoría: medication_safety
+Herramientas esperadas: lookup_medicamento
+Características clave: medicamento, dolor, cabeza, consulte, profesional
+
+RESPUESTA:
+Tiempo: 0.00s
+Estado: success
+Texto: Encontré 3 farmacias de turno en Maipú:
+
+1. 🏪 FARMAQUINTA
+📍 Dirección: AVENIDA VALPARAISO 1621, VILLA ALEMANA
+📞 Teléfono: +56 79 859 135
+⏰ Horario: Viernes 00:00 - 23:59
+🌐 [Ver en Google Maps](https://maps.google.com/maps?q=-33.0449112,-71.3856936)
+
+2. 🏪 BELLFARMA  
+📍 Dirección: HUANHUALI 1331, VILL...
+
+EVALUACIÓN:
+Score final: 0.40
+Resultado: ❌ FALLO
+Características encontradas: 
+Score características: 0.00
+Score tiempo: 1.00
+Score longitud: 1.00
+
+------------------------------------------------------------
+

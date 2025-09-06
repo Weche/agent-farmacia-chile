@@ -30,7 +30,7 @@ class SpanishPharmacyAgent:
     """
     
     def __init__(self, use_langfuse: bool = None):
-        self.model = get_env_value("AGENT_MODEL", "gpt-3.5-turbo")
+        self.model = get_env_value("AGENT_MODEL", "gpt-4o-mini")
         self.temperature = float(get_env_value("AGENT_TEMPERATURE", "0.1"))
         self.max_tokens = int(get_env_value("AGENT_MAX_TOKENS", "500"))
         self.safety_mode = get_env_value("AGENT_SAFETY_MODE", "strict")
@@ -65,17 +65,21 @@ class SpanishPharmacyAgent:
             try:
                 # Use Langfuse-wrapped OpenAI client for observability
                 self.openai_client = OpenAI(
-                    api_key=api_key,
-                    base_url=get_env_value("LANGFUSE_HOST", "https://cloud.langfuse.com")
+                    api_key=api_key
+                    # Langfuse wrapper will handle the observability automatically
                 )
                 logger.info("✅ OpenAI client initialized with Langfuse observability")
             except Exception as e:
                 logger.warning(f"⚠️ Langfuse initialization failed, falling back to standard OpenAI: {e}")
-                self.openai_client = OpenAI(api_key=api_key)
+                # Import standard OpenAI for fallback
+                from openai import OpenAI as StandardOpenAI
+                self.openai_client = StandardOpenAI(api_key=api_key)
                 logger.info("✅ OpenAI client initialized (standard mode - fallback)")
         else:
             # Standard OpenAI client
-            self.openai_client = OpenAI(api_key=api_key)
+            # Import standard OpenAI when Langfuse disabled
+            from openai import OpenAI as StandardOpenAI
+            self.openai_client = StandardOpenAI(api_key=api_key)
             logger.info("✅ OpenAI client initialized (standard mode)")
     
     def _create_system_prompt(self) -> str:

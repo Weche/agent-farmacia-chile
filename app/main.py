@@ -209,18 +209,24 @@ async def create_chat_session():
 
 @app.post("/api/chat/message")
 async def send_chat_message(
-    payload: ChatPayload,
-    session_id: str = Query(..., description="Session ID for the conversation")
+    payload: ChatSessionPayload,
+    session_id: Optional[str] = Query(None, description="Session ID for the conversation (also accepted in JSON body)")
 ):
-    """Send a message to an existing chat session"""
+    """Send a message to an existing chat session.
+    Backward compatible: session_id can be provided either as query param or inside JSON payload
+    to avoid 422/400 errors from clients sending it in the body.
+    """
     if not spanish_agent:
         raise HTTPException(status_code=503, detail="AI Agent not available")
-    
-    if not session_id:
-        raise HTTPException(status_code=400, detail="session_id is required")
-    
+
+    # Prefer explicit query param, otherwise fall back to body
+    effective_session_id = session_id or payload.session_id
+
+    if not effective_session_id:
+        raise HTTPException(status_code=400, detail="session_id is required (as query param or in JSON body)")
+
     try:
-        response = await spanish_agent.process_message(session_id, payload.message)
+        response = await spanish_agent.process_message(effective_session_id, payload.message)
         return response
     except Exception as e:
         logger.error(f"❌ Message processing error: {e}")
@@ -299,15 +305,23 @@ def chat_legacy(payload: ChatPayload):
 # New endpoints for the web interface
 @app.get("/")
 def read_root():
-    """Serve the main web interface"""
-    template_path = Path(__file__).parent.parent / "templates" / "index.html"
+    """Serve the main web interface (modern version with AI chat)"""
+    template_path = Path(__file__).parent.parent / "templates" / "index_modern.html"
     if template_path.exists():
         return FileResponse(template_path)
     return {"message": "Web interface not available. Use /docs for API documentation."}
 
+@app.get("/legacy")
+def read_legacy():
+    """Serve the legacy web interface (original version)"""
+    template_path = Path(__file__).parent.parent / "templates" / "index.html"
+    if template_path.exists():
+        return FileResponse(template_path)
+    return {"message": "Legacy web interface not available. Use /docs for API documentation."}
+
 @app.get("/modern")
 def read_modern():
-    """Serve the modern web interface with AI chat"""
+    """Redirect to main homepage (kept for compatibility)"""
     template_path = Path(__file__).parent.parent / "templates" / "index_modern.html"
     if template_path.exists():
         return FileResponse(template_path)
@@ -531,7 +545,7 @@ def get_nearby_pharmacies(
     abierto: bool = Query(False, description="Only open pharmacies"),
     abierto_ahora: bool = Query(False, description="Only pharmacies open right now")
 ):
-    """Find pharmacies near a location"""
+    """Find pharmacies near a location you can change the radius if needed"""
     try:
         if abierto_ahora:
             # Use new method that checks current time
@@ -841,3 +855,209 @@ async def trigger_data_update():
     except Exception as e:
         logger.error(f"❌ Data update error: {e}")
         raise HTTPException(status_code=500, detail=f"Data update error: {e}")
+
+
+# 🔍 TEMPORARY TESTING ENDPOINT FOR CLICKABLE LINKS
+@app.get("/test-links")
+async def test_links():
+    """Endpoint temporal para probar enlaces clickeables directamente"""
+    from fastapi.responses import HTMLResponse
+    
+    test_html = """
+    <!DOCTYPE html>
+    <html>
+    <head>
+        <title>🔍 Test de Enlaces Clickeables</title>
+        <link rel="stylesheet" href="/templates/assets/css/main.css">
+        <style>
+            body { padding: 40px; font-family: Arial, sans-serif; background: #f5f5f5; }
+            .test-section { background: white; padding: 20px; margin: 20px 0; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+            .test-title { color: #333; border-bottom: 2px solid #4CAF50; padding-bottom: 10px; }
+        </style>
+    </head>
+    <body>
+        <h1>🔍 Test de Enlaces Clickeables - Diagnóstico</h1>
+        
+        <div class="test-section">
+            <h3 class="test-title">Test 1: Enlaces Directos (Sin JavaScript)</h3>
+            <p>Estos enlaces deberían funcionar inmediatamente:</p>
+            <a href="https://maps.google.com/maps?q=-33.4489,-70.6693" target="_blank" class="pharmacy-link">📍 Google Maps Directo</a><br><br>
+            <a href="tel:+56987654321" class="phone-link">📞 Llamar Test</a><br><br>
+        </div>
+        
+        <div class="test-section">
+            <h3 class="test-title">Test 2: Estructura AI Response</h3>
+            <p>Simulando respuesta del AI con nueva estructura:</p>
+            <div class="message-content-main">
+                <div class="ai-response-content">
+                    <div class="pharmacy-name">🏪 FARMACIA TEST</div>
+                    <div class="pharmacy-address">📍 Dirección Test 123</div>
+                    <div class="pharmacy-phone">📞 +56 9 8765 4321</div>
+                    <div class="pharmacy-hours">⏰ Lunes 08:00 - 18:00</div>
+                    <a href="https://maps.google.com/maps?q=-33.4489,-70.6693" target="_blank" class="pharmacy-link">🗺️ Ver en Maps</a>
+                </div>
+            </div>
+        </div>
+        
+        <div class="test-section">
+            <h3 class="test-title">Test 3: JavaScript Conversion</h3>
+            <p>Contenido que será procesado por JavaScript:</p>
+            <div id="js-test-content">
+                🏪 FARMACIA JAVASCRIPT<br>
+                📍 Dirección: Test JS 456<br>
+                📞 Teléfono: +56 9 1111 2222<br>
+                ⏰ Horario: Martes 09:00 - 19:00<br>
+                🌐 [Ver en Google Maps](https://maps.google.com/maps?q=-33.4489,-70.6693)<br>
+            </div>
+        </div>
+        
+        <div class="test-section">
+            <h3 class="test-title">Test 4: Console Debug</h3>
+            <p>Abre la consola del navegador (F12) y pega este código:</p>
+            <textarea readonly style="width: 100%; height: 150px; font-family: monospace;">
+// Test de formatAIResponse
+const testInput = "🏪 FARMACIA CONSOLE\\n📞 Teléfono: +56 9 3333 4444\\n🌐 [Ver en Google Maps](https://maps.google.com/maps?q=-33.4489,-70.6693)";
+const testDiv = document.getElementById('js-test-content');
+if (window.chatManager && window.chatManager.formatAIResponse) {
+    const formatted = window.chatManager.formatAIResponse(testInput);
+    console.log('Formatted result:', formatted);
+    testDiv.innerHTML = formatted;
+} else {
+    console.log('ChatManager not available');
+}
+            </textarea>
+        </div>
+        
+        <script src="/templates/assets/js/chat.js" type="module"></script>
+        <div class="test-section">
+            <h3 class="test-title">Test 5: Diagnóstico Automático (sin consola)</h3>
+            <p>Resultados del diagnóstico aparecerán abajo; si hay overlays que bloquean clicks, usa el botón para deshabilitarlos temporalmente.</p>
+            <button id="disable-overlays" style="padding:8px 12px;border-radius:6px;border:none;background:#f44336;color:#fff;cursor:pointer;margin-bottom:8px;">Deshabilitar overlays (temporal)</button>
+            <div id="diagnostic-output" style="background:#fafafa;padding:12px;border-radius:8px;border:1px solid #eee;max-height:320px;overflow:auto;"></div>
+        </div>
+        <script>
+            // Local copy of the formatter (mirrors chat.js::formatAIResponse) so this page doesn't require the ChatManager instance.
+            function localFormatAIResponse(content) {
+                let formatted = content
+                    .replace(/&/g, '&amp;')
+                    .replace(/</g, '&lt;')
+                    .replace(/>/g, '&gt;');
+                formatted = formatted.replace(/\n/g, '<br>');
+                formatted = formatted.replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" target="_blank" class="pharmacy-link">$1</a>');
+                formatted = formatted.replace(/\b(tel:\+\d+[0-9\-\s]*)/g, '<a href="$1" class="phone-link">📞 Llamar</a>');
+                formatted = formatted.replace(/🌐\s*<a([^>]*href[^>]*maps[^>]*)>([^<]*)<\/a>/gi, '<span class="map-link">🗺️ <a$1><strong>$2</strong></a></span>');
+                formatted = formatted.replace(/🏪\s*([^📍\n<]+)/g, '<div class="pharmacy-name">🏪 <strong>$1</strong></div>');
+                formatted = formatted.replace(/📍\s*([^<\n⏰📞🌐]+)/g, '<div class="pharmacy-address">📍 <em>$1</em></div>');
+                formatted = formatted.replace(/📞\s*([^<\n⏰📍🌐]+)/g, '<div class="pharmacy-phone">📞 $1</div>');
+                formatted = formatted.replace(/⏰\s*([^<\n📍📞🌐]+)/g, '<div class="pharmacy-hours">⏰ $1</div>');
+                formatted = formatted.replace(/�([^<\n]*)/g, '<span class="emergency-indicator">�$1</span>');
+                return formatted;
+            }
+
+            function runDiagnostic() {
+                const out = document.getElementById('diagnostic-output');
+                out.innerHTML = '';
+                const testInput = `🏪 FARMACIA CONSOLE\n📞 Teléfono: tel:+56933334444\n🌐 [Ver en Google Maps](https://maps.google.com/maps?q=-33.4489,-70.6693)`;
+                const formatted = localFormatAIResponse(testInput);
+                // Render formatted into a preview box
+                const preview = document.createElement('div');
+                preview.style.padding = '8px';
+                preview.style.border = '1px dashed #ddd';
+                preview.style.marginBottom = '8px';
+                preview.innerHTML = '<strong>Preview HTML:</strong><br>' + formatted;
+                out.appendChild(preview);
+
+                // Append anchor summary
+                const temp = document.createElement('div');
+                temp.innerHTML = formatted;
+                const anchors = temp.querySelectorAll('a');
+                const report = document.createElement('div');
+                report.innerHTML = `<strong>Anchors found:</strong> ${anchors.length}`;
+                out.appendChild(report);
+
+                anchors.forEach((a, i) => {
+                    const info = document.createElement('div');
+                    const rect = a.getBoundingClientRect();
+                    info.textContent = `${i}: href=${a.href} text="${a.textContent.trim()}"`;
+                    out.appendChild(info);
+                });
+
+                // ElementFromPoint check (attempt at viewport center for each link)
+                const efp = document.createElement('div');
+                efp.innerHTML = '<strong>elementFromPoint checks:</strong>';
+                out.appendChild(efp);
+                anchors.forEach((a, i) => {
+                    // Insert preview anchor into DOM so elementFromPoint can resolve
+                    const anchorWrap = document.createElement('div');
+                    anchorWrap.style.position = 'relative';
+                    anchorWrap.style.margin = '6px 0';
+                    anchorWrap.innerHTML = a.outerHTML;
+                    out.appendChild(anchorWrap);
+                    // Wait a tick to allow layout
+                    const r = anchorWrap.querySelector('a').getBoundingClientRect();
+                    const el = document.elementFromPoint(r.left + r.width/2, r.top + r.height/2);
+                    const elInfo = document.createElement('div');
+                    elInfo.textContent = `anchor ${i} elementFromPoint => ${el ? (el.tagName + (el.className ? ' .' + el.className : '')) : 'null'}`;
+                    out.appendChild(elInfo);
+                });
+
+                // List potential overlays
+                const overlays = document.querySelectorAll('.loading-overlay, .card-overlay, .overlay, .modal-backdrop');
+                const ov = document.createElement('div');
+                ov.innerHTML = `<strong>Potential overlays found:</strong> ${overlays.length}`;
+                out.appendChild(ov);
+                overlays.forEach(o => {
+                    const i = document.createElement('div');
+                    const s = getComputedStyle(o);
+                    i.textContent = `overlay ${o.className} display=${s.display} pointerEvents=${s.pointerEvents} zIndex=${s.zIndex}`;
+                    out.appendChild(i);
+                });
+            }
+
+            document.addEventListener('DOMContentLoaded', () => {
+                runDiagnostic();
+                const btn = document.getElementById('disable-overlays');
+                btn.addEventListener('click', () => {
+                    document.querySelectorAll('.loading-overlay, .card-overlay, .overlay, .modal-backdrop').forEach(o => {
+                        o.style.pointerEvents = 'none';
+                        o.style.display = 'none';
+                    });
+                    runDiagnostic();
+                });
+            });
+        </script>
+    </body>
+    </html>
+    """
+    
+    return HTMLResponse(test_html)
+
+
+# 🔍 SIMPLE CHAT TEST ENDPOINT  
+@app.post("/api/chat")
+async def simple_chat_test(request: ChatPayload):
+    """Endpoint simplificado para test de chat"""
+    message = request.message
+    
+    # Respuesta de prueba con enlaces markdown
+    test_response = f"""Encontré 3 farmacias de turno en Maipú:
+
+1. 🏪 FARMAQUINTA
+📍 Dirección: AVENIDA VALPARAISO 1621, VILLA ALEMANA
+📞 Teléfono: +56 79 859 135
+⏰ Horario: Viernes 00:00 - 23:59
+🌐 [Ver en Google Maps](https://maps.google.com/maps?q=-33.0449112,-71.3856936)
+
+2. 🏪 BELLFARMA  
+📍 Dirección: HUANHUALI 1331, VILLA ALEMANA
+📞 Teléfono: +563118844
+⏰ Horario: Sábado 09:00 - 18:00 (Por abrir)
+🌐 [Ver en Google Maps](https://maps.google.com/maps?q=-33.058657929509,-71.3860337445243)
+
+3. 🏪 FARMA CHILE
+📍 Dirección: JORGE DÉLANO N° 70, MAIPU
+📞 Teléfono: +56
+⏰ Horario: Sábado 08:00 - 07:59 (Por abrir)  
+🌐 [Ver en Google Maps](https://maps.google.com/maps?q=-33.482677,-70.747523)"""
+    
+    return {"message": test_response}

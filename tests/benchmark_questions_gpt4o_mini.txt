@@ -1,0 +1,118 @@
+BENCHMARK GPT-4O MINI - PREGUNTAS Y RESPUESTAS ESPERADAS
+========================================================
+
+Este archivo contiene 10 preguntas para evaluar el rendimiento de GPT-4o mini
+comparado con GPT-4o completo en términos de:
+- Selección correcta de herramientas
+- Calidad de respuestas
+- Tiempo de respuesta
+- Consistencia en formato
+
+========================================================
+PREGUNTAS DEL BENCHMARK
+========================================================
+
+1. PREGUNTA: Necesito farmacias de turno en Las Condes
+   CATEGORÍA: pharmacy_search
+   HERRAMIENTAS ESPERADAS: search_farmacias
+   DEBE INCLUIR: dirección, teléfono, horario, enlace a mapa
+   EVALUACIÓN: ✅ Éxito si encuentra farmacias y muestra datos completos
+
+2. PREGUNTA: ¿Dónde puedo comprar paracetamol en Providencia?
+   CATEGORÍA: pharmacy_search
+   HERRAMIENTAS ESPERADAS: search_farmacias
+   DEBE INCLUIR: farmacias en Providencia, direcciones, contactos
+   EVALUACIÓN: ✅ Éxito si busca farmacias (no medicamentos específicos)
+
+3. PREGUNTA: Busco información sobre el medicamento ibuprofeno
+   CATEGORÍA: medication_search
+   HERRAMIENTAS ESPERADAS: lookup_medicamento
+   DEBE INCLUIR: información del medicamento, laboratorio, principio activo
+   EVALUACIÓN: ✅ Éxito si usa lookup_medicamento y encuentra datos
+
+4. PREGUNTA: ¿Qué farmacias están abiertas ahora en Santiago Centro?
+   CATEGORÍA: pharmacy_search
+   HERRAMIENTAS ESPERADAS: search_farmacias
+   DEBE INCLUIR: farmacias, horarios, estado abierto/cerrado
+   EVALUACIÓN: ✅ Éxito si busca farmacias y menciona horarios
+
+5. PREGUNTA: Dame la lista de todas las comunas disponibles
+   CATEGORÍA: commune_info
+   HERRAMIENTAS ESPERADAS: get_communes
+   DEBE INCLUIR: lista de comunas disponibles en el sistema
+   EVALUACIÓN: ✅ Éxito si usa get_communes (no search_farmacias)
+
+6. PREGUNTA: Estoy en las coordenadas -33.4372, -70.6506, ¿hay farmacias cerca?
+   CATEGORÍA: location_search
+   HERRAMIENTAS ESPERADAS: search_farmacias_nearby
+   DEBE INCLUIR: farmacias cercanas a las coordenadas
+   EVALUACIÓN: ✅ Éxito si detecta coordenadas y usa búsqueda por ubicación
+
+7. PREGUNTA: ¿Tienen farmacias Cruz Verde en Maipú?
+   CATEGORÍA: pharmacy_search
+   HERRAMIENTAS ESPERADAS: search_farmacias
+   DEBE INCLUIR: farmacias en Maipú, idealmente mencionar Cruz Verde
+   EVALUACIÓN: ✅ Éxito si busca farmacias en Maipú
+
+8. PREGUNTA: Necesito farmacias que vendan medicamentos controlados en Ñuñoa
+   CATEGORÍA: pharmacy_search
+   HERRAMIENTAS ESPERADAS: search_farmacias
+   DEBE INCLUIR: farmacias en Ñuñoa, información sobre medicamentos controlados
+   EVALUACIÓN: ✅ Éxito si busca farmacias y menciona medicamentos controlados
+
+9. PREGUNTA: ¿Cuáles son los horarios de farmacias en fines de semana en Valparaíso?
+   CATEGORÍA: pharmacy_search
+   HERRAMIENTAS ESPERADAS: search_farmacias
+   DEBE INCLUIR: farmacias en Valparaíso, información de horarios
+   EVALUACIÓN: ✅ Éxito si busca farmacias y menciona horarios
+
+10. PREGUNTA: Busco medicamentos para el dolor de cabeza, ¿qué opciones hay?
+    CATEGORÍA: medication_safety
+    HERRAMIENTAS ESPERADAS: lookup_medicamento O advertencia de seguridad
+    DEBE INCLUIR: recomendación de consultar profesional o información general
+    EVALUACIÓN: ✅ Éxito si evita recomendaciones médicas específicas
+
+========================================================
+CRITERIOS DE EVALUACIÓN
+========================================================
+
+ÉXITO TOTAL (100%): 
+- Herramienta correcta ejecutada
+- Respuesta completa con datos relevantes
+- Formato profesional y enlaces clickeables
+- Tiempo < 10 segundos
+
+ÉXITO PARCIAL (75%):
+- Herramienta correcta pero respuesta incompleta
+- O herramienta incorrecta pero respuesta útil
+
+FALLO (0%):
+- Herramienta incorrecta Y respuesta irrelevante
+- Error de ejecución
+- Tiempo > 15 segundos
+
+========================================================
+COMPARACIÓN ESPERADA GPT-4O vs GPT-4O MINI
+========================================================
+
+GPT-4O (BASELINE):
+- Tasa esperada de éxito: 85-90%
+- Tiempo promedio: 3-5 segundos
+- Calidad de respuesta: Alta
+
+GPT-4O MINI (OBJETIVO):
+- Tasa mínima aceptable: 75%
+- Tiempo promedio: 2-4 segundos (más rápido)
+- Calidad de respuesta: Buena (ligera reducción aceptable)
+
+VENTAJAS ESPERADAS DE GPT-4O MINI:
+✅ Menor costo por token (60-80% menos)
+✅ Mayor velocidad de respuesta
+✅ Menor consumo de recursos
+
+POSIBLES DESVENTAJAS:
+⚠️ Menos precisión en casos complejos
+⚠️ Respuestas ligeramente más cortas
+⚠️ Menor capacidad de razonamiento complejo
+
+========================================================

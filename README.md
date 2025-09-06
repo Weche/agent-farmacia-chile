@@ -1,8 +1,32 @@
-# 🏥 Pharmacy Finder - Chile MVP v2 with Spanish AI Agent
+# 🏥 Agente Farmacia Chile v2.0 - Spanish AI Assistant
 
-A comprehensive web application for finding pharmacies in Chile with real-time data from MINSAL (Ministry of Health), advanced quality monitoring, and an intelligent Spanish-speaking AI assistant with custom branding and dynamic animations.
+A comprehensive web application for finding pharmacies in Chile with real-time data from MINSAL (Ministry of Health), advanced quality monitoring, and an intelligent Spanish-speaking AI assistant with LLM + embeddings enhanced search capabilities.
 
-## 🌟 NEW: Enhanced Spanish AI Agent with Custom Branding
+## 🚀 QUICK START - Run Locally
+
+### **🔥 One-Command Setup (Recommended)**
+```bash
+# Clone and setup automatically
+git clone https://github.com/Weche/agent-farmacia-chile.git
+cd agent-farmacia-chile
+
+# Windows
+setup_local.bat
+
+# Linux/Mac
+bash setup_local.sh
+```
+
+### **⚡ Manual Setup**
+1. **Install dependencies**: `pip install -r requirements.txt`
+2. **Configure .env**: Copy `.env.example` to `.env` and add your OpenAI API key
+3. **Start Redis**: `redis-server` or use Redis Cloud
+4. **Run application**: `python -m uvicorn app.main:app --host 127.0.0.1 --port 8003 --reload`
+5. **Open**: http://localhost:8003
+
+📚 **Detailed Guide**: See [GUIA_INSTALACION_LOCAL.md](GUIA_INSTALACION_LOCAL.md)
+
+## 🌟 NEW: Enhanced Spanish AI Agent with LLM + Embeddings
 
 **🤖 Intelligent Pharmacy Assistant**
 - **Natural Spanish Conversations** - Chat in Spanish about pharmacy needs

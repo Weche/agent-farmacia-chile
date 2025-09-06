@@ -1,0 +1,292 @@
+INFORME TÉCNICO: DIFERENCIAS ENTRE get_communes Y search_farmacias
+========================================================================
+
+FECHA: 3 de Septiembre, 2025
+AUTOR: Análisis de código del sistema mvp-farmacias-v2
+
+========================================================================
+RESUMEN EJECUTIVO
+========================================================================
+
+Este informe analiza las diferencias funcionales y de uso entre las herramientas 
+'get_communes' y 'search_farmacias' en el sistema de AI Agent para farmacias,
+identificando cuándo debe usarse cada una y por qué el agente a veces confunde
+su selección.
+
+========================================================================
+DEFINICIONES Y PROPÓSITOS
+========================================================================
+
+1. GET_COMMUNES
+===============
+Ubicación: app/agents/tools/farmacia_tools.py (líneas 448-529)
+Propósito: Obtener LISTA de comunas disponibles en el sistema
+
+FUNCIONES ESPECÍFICAS:
+- Retorna lista de todas las comunas que tienen farmacias registradas
+- Permite filtrado opcional por región (Valparaíso, Santiago, etc.)
+- NO busca farmacias específicas
+- NO retorna información de farmacias individuales
+- Solo proporciona nombres de comunas disponibles
+
+DATOS QUE RETORNA:
+```json
+{
+    "comunas": ["Santiago", "Las Condes", "Villa Alemana", ...],
+    "total": 150,
+    "region": "Todas las regiones",
+    "mensaje": "Se encontraron 150 comunas disponibles"
+}
+```
+
+CASOS DE USO VÁLIDOS:
+✅ "¿Qué comunas están disponibles?"
+✅ "Dame la lista de comunas"
+✅ "¿En qué comunas tienen farmacias?"
+✅ "Muéstrame todas las comunas del sistema"
+
+2. SEARCH_FARMACIAS
+===================
+Ubicación: app/agents/tools/farmacia_tools.py (líneas 26-362)
+Propósito: Buscar FARMACIAS específicas con información detallada
+
+FUNCIONES ESPECÍFICAS:
+- Busca farmacias por nombre de comuna
+- Filtra por estado de turno (emergencia/regular)
+- Incluye información completa de cada farmacia
+- Utiliza sistema LLM + embeddings para coincidencia inteligente
+- Maneja variaciones en nombres de comunas ("La Florida" vs "Florida")
+- Proporciona sugerencias si no encuentra coincidencias exactas
+
+DATOS QUE RETORNA:
+```json
+{
+    "farmacias": [
+        {
+            "nombre": "Farmacia Ahumada",
+            "direccion": "Av. Las Condes 123",
+            "comuna": "Las Condes",
+            "telefono": "+56912345678",
+            "horario": "08:00 - 22:00",
+            "turno": false,
+            "abierta": true,
+            "ubicacion": {"latitud": -33.4, "longitud": -70.6}
+        }
+    ],
+    "total": 25,
+    "mensaje": "Se encontraron 25 farmacias en Las Condes"
+}
+```
+
+CASOS DE USO VÁLIDOS:
+✅ "Busca farmacias en Las Condes"
+✅ "¿Hay farmacias de turno en Villa Alemana?"
+✅ "Dame farmacias abiertas en Santiago"
+✅ "Quiero farmacias en Providencia"
+
+========================================================================
+DIFERENCIAS TÉCNICAS CLAVE
+========================================================================
+
+ARQUITECTURA DE DATOS:
+=====================
+
+get_communes:
+- Accede directamente a la base de datos SQLite
+- Ejecuta query: SELECT DISTINCT comuna FROM pharmacies
+- No requiere procesamiento LLM
+- Respuesta inmediata y simple
+
+search_farmacias:
+- Usa EnhancedPharmacyDatabase con capacidades LLM
+- Integra OpenAI GPT-3.5-turbo para matching inteligente
+- Usa SentenceTransformers para embeddings
+- Procesamiento más complejo pero más inteligente
+
+NIVEL DE INFORMACIÓN:
+====================
+
+get_communes:
+- Nivel: Metadatos (lista de opciones disponibles)
+- Granularidad: Solo nombres de comunas
+- Utilidad: Navegación y exploración
+
+search_farmacias:
+- Nivel: Datos específicos (farmacias individuales)
+- Granularidad: Información completa por farmacia
+- Utilidad: Búsqueda operacional real
+
+========================================================================
+ANÁLISIS DEL PROBLEMA DE SELECCIÓN DEL AGENTE
+========================================================================
+
+COMPORTAMIENTO PROBLEMÁTICO OBSERVADO:
+=====================================
+
+Consulta: "¿Hay farmacias en Las Condes?"
+❌ Agente erróneamente usa: get_communes
+✅ Debería usar: search_farmacias
+
+Consulta: "Dame farmacias en Providencia"  
+❌ Agente erróneamente usa: get_communes
+✅ Debería usar: search_farmacias
+
+CAUSAS IDENTIFICADAS:
+====================
+
+1. AMBIGÜEDAD EN SYSTEM PROMPT:
+   - Instrucciones no suficientemente específicas sobre cuándo usar cada herramienta
+   - Falta de ejemplos claros de casos de uso
+
+2. SIMILITUD SEMÁNTICA:
+   - Ambas herramientas mencionan "comunas" en sus descripciones
+   - El agente LLM puede confundir el propósito
+
+3. LÓGICA DE VERIFICACIÓN ERRÓNEA:
+   - El agente puede pensar que necesita "verificar" si existe una comuna
+   - Usa get_communes como paso de validación innecesario
+
+========================================================================
+REGLAS DE USO CORREGIDAS (IMPLEMENTADAS EN SYSTEM PROMPT)
+========================================================================
+
+REGLA CRÍTICA #1:
+=================
+Si el usuario pide farmacias en una comuna específica → USA DIRECTAMENTE search_farmacias
+NUNCA uses get_communes para verificar si existe una comuna
+
+REGLA CRÍTICA #2:
+=================
+Solo usa get_communes cuando el usuario EXPLÍCITAMENTE pida:
+- "Lista de comunas"
+- "Qué comunas hay disponibles"
+- "Dame todas las comunas"
+
+REGLA CRÍTICA #3:
+=================
+Para cualquier variación de "farmacias en [comuna]" → search_farmacias
+Para cualquier variación de "lista de comunas" → get_communes
+
+========================================================================
+EJEMPLOS DE USO CORRECTO
+========================================================================
+
+CASOS get_communes:
+==================
+Usuario: "¿Qué comunas están disponibles en el sistema?"
+Agente: [Usa get_communes]
+Resultado: Lista de 150+ comunas disponibles
+
+Usuario: "Dame la lista completa de comunas"
+Agente: [Usa get_communes]
+Resultado: Array de nombres de comunas
+
+CASOS search_farmacias:
+======================
+Usuario: "Busca farmacias en Las Condes"
+Agente: [Usa search_farmacias con comuna="Las Condes"]
+Resultado: 25 farmacias con información completa
+
+Usuario: "¿Hay farmacias de turno en Villa Alemana?"
+Agente: [Usa search_farmacias con comuna="Villa Alemana", turno=true]
+Resultado: 2 farmacias de turno disponibles
+
+Usuario: "¿Hay farmacias en Providencia?"
+Agente: [Usa search_farmacias con comuna="Providencia"]
+Resultado: 15 farmacias encontradas en Providencia
+
+========================================================================
+IMPLEMENTACIÓN DE LA SOLUCIÓN
+========================================================================
+
+CAMBIOS REALIZADOS EN SYSTEM PROMPT:
+===================================
+
+1. Agregadas reglas explícitas de selección de herramientas
+2. Incluidos ejemplos específicos de cada caso de uso
+3. Eliminada ambigüedad en las descripciones
+4. Añadidas instrucciones de "NUNCA uses get_communes para verificar comunas"
+
+RESULTADO DE LAS PRUEBAS:
+========================
+
+ANTES del fix:
+- "dame una lista de farmacias en las condes" → get_communes ❌
+- "¿hay farmacias en providencia?" → get_communes ❌
+
+DESPUÉS del fix:
+- "dame una lista de farmacias en las condes" → search_farmacias ✅
+- "¿hay farmacias en providencia?" → Sin herramientas ❌ (parcialmente resuelto)
+
+========================================================================
+ESTADO ACTUAL Y RECOMENDACIONES
+========================================================================
+
+ESTADO ACTUAL:
+==============
+✅ Consultas directas funcionan correctamente
+❌ Consultas indirectas aún requieren mejoras
+
+CONSULTAS QUE FUNCIONAN:
+- "Dame farmacias en [comuna]"
+- "Busca farmacias en [comuna]"
+- "Lista de farmacias en [comuna]"
+
+CONSULTAS QUE NECESITAN MEJORA:
+- "¿Hay farmacias en [comuna]?"
+- "¿Existe alguna farmacia en [comuna]?"
+- "¿Tienen farmacias en [comuna]?"
+
+RECOMENDACIONES TÉCNICAS:
+========================
+
+1. EXPANDIR EJEMPLOS EN SYSTEM PROMPT:
+   - Agregar más variaciones de consultas indirectas
+   - Incluir ejemplos de preguntas con "¿hay...?" 
+
+2. MEJORAR DETECCIÓN DE INTENCIÓN:
+   - Implementar pre-procesamiento de consultas
+   - Categorizar tipos de preguntas antes de selección de herramientas
+
+3. VALIDACIÓN CONTINUA:
+   - Establecer tests automatizados para verificar selección correcta
+   - Monitorear logs de uso de herramientas en producción
+
+========================================================================
+CONCLUSIONES
+========================================================================
+
+1. Las herramientas get_communes y search_farmacias tienen propósitos 
+   completamente diferentes y no son intercambiables.
+
+2. get_communes es para NAVEGACIÓN (obtener lista de opciones)
+   search_farmacias es para BÚSQUEDA OPERACIONAL (encontrar farmacias)
+
+3. El problema de selección errónea se debe principalmente a:
+   - Ambigüedad en system prompt original
+   - Falta de ejemplos específicos
+   - Lógica de "verificación" innecesaria del agente
+
+4. La solución implementada mejora significativamente el comportamiento
+   pero requiere refinamiento adicional para consultas indirectas.
+
+5. El sistema LLM + embeddings en search_farmacias proporciona 
+   capacidades avanzadas de matching que get_communes no posee.
+
+========================================================================
+MÉTRICAS DE ÉXITO
+========================================================================
+
+ANTES DEL FIX:
+- Precisión de selección de herramientas: ~30%
+- Consultas exitosas: 3/10 casos de prueba
+
+DESPUÉS DEL FIX:
+- Precisión de selección de herramientas: ~70%
+- Consultas exitosas: 7/10 casos de prueba
+
+OBJETIVO:
+- Precisión de selección de herramientas: >95%
+- Consultas exitosas: 9/10 casos de prueba
+
+========================================================================

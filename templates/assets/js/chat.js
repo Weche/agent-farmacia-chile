@@ -285,7 +285,7 @@ export class ChatManager {
             messageDiv.innerHTML = `
                 <div class="message-avatar">🤖</div>
                 <div class="message-content">
-                    <p>${this.formatAIResponse(content)}</p>
+                    <div class="ai-response-content">${this.formatAIResponse(content)}</div>
                     <span class="message-time">${timestamp}</span>
                 </div>
             `;
@@ -310,11 +310,33 @@ export class ChatManager {
         // Convert line breaks to <br>
         formatted = formatted.replace(/\n/g, '<br>');
         
-        // Make pharmacy names bold (simple regex)
-        formatted = formatted.replace(/farmacia\s+([^,\.!?]+)/gi, '<strong>Farmacia $1</strong>');
+        // ⚡ CONVERT MARKDOWN LINKS TO CLICKABLE HTML LINKS
+        // Pattern: [texto](url) -> <a href="url" target="_blank">texto</a>
+        formatted = formatted.replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" target="_blank" class="pharmacy-link">$1</a>');
         
-        // Make addresses clickable if they contain street names
-        formatted = formatted.replace(/📍\s*([^<\n]+)/g, '<span class="address">📍 $1</span>');
+        // ⚡ CONVERT PHONE LINKS TO CLICKABLE
+        // Pattern: tel:+56... -> clickable phone link
+        formatted = formatted.replace(/\b(tel:\+\d+[0-9\-\s]*)/g, '<a href="$1" class="phone-link">📞 Llamar</a>');
+        
+        // ⚡ MAKE MAP LINKS MORE PROMINENT
+        // Enhance map links with better styling
+        formatted = formatted.replace(/🌐\s*<a([^>]*href[^>]*maps[^>]*)>([^<]*)<\/a>/gi, 
+                                    '<span class="map-link">🗺️ <a$1><strong>$2</strong></a></span>');
+        
+        // ⚡ MAKE EMERGENCY PHARMACY NAMES BOLD AND PROMINENT
+        formatted = formatted.replace(/🏪\s*([^📍\n<]+)/g, '<div class="pharmacy-name">🏪 <strong>$1</strong></div>');
+        
+        // ⚡ ENHANCE ADDRESSES
+        formatted = formatted.replace(/📍\s*([^<\n⏰📞🌐]+)/g, '<div class="pharmacy-address">📍 <em>$1</em></div>');
+        
+        // ⚡ ENHANCE PHONE NUMBERS
+        formatted = formatted.replace(/📞\s*([^<\n⏰📍🌐]+)/g, '<div class="pharmacy-phone">📞 $1</div>');
+        
+        // ⚡ ENHANCE SCHEDULE INFO
+        formatted = formatted.replace(/⏰\s*([^<\n📍📞🌐]+)/g, '<div class="pharmacy-hours">⏰ $1</div>');
+        
+        // ⚡ EMERGENCY INDICATORS
+        formatted = formatted.replace(/�([^<\n]*)/g, '<span class="emergency-indicator">�$1</span>');
         
         return formatted;
     }

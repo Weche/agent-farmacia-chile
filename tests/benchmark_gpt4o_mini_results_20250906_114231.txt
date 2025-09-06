@@ -1,0 +1,248 @@
+BENCHMARK GPT-4O MINI - RESULTADOS DETALLADOS
+============================================================
+
+Fecha: 06/09/2025 11:42:31
+Modelo: GPT-4o Mini
+Total preguntas: 10
+Preguntas exitosas: 0
+Tasa de éxito: 0.0%
+Tiempo promedio: 8.84s
+Score promedio: 0.27
+Tiempo total: 93.4s
+
+ANÁLISIS POR CATEGORÍAS
+------------------------------
+pharmacy_search:
+  Éxito: 0/6 (0.0%)
+  Score promedio: 0.26
+
+medication_search:
+  Éxito: 0/1 (0.0%)
+  Score promedio: 0.30
+
+commune_info:
+  Éxito: 0/1 (0.0%)
+  Score promedio: 0.24
+
+location_search:
+  Éxito: 0/1 (0.0%)
+  Score promedio: 0.30
+
+medication_safety:
+  Éxito: 0/1 (0.0%)
+  Score promedio: 0.30
+
+
+DETALLE DE CADA PREGUNTA
+============================================================
+
+PREGUNTA 1
+Texto: Necesito farmacias de turno en Las Condes
+Categoría: pharmacy_search
+Herramientas esperadas: search_farmacias
+Características clave: farmacia, las condes, turno, dirección, teléfono
+
+RESPUESTA:
+Tiempo: 7.29s
+Estado: success
+Texto: 
+
+EVALUACIÓN:
+Score final: 0.30
+Resultado: ❌ FALLO
+Características encontradas: 
+Score características: 0.00
+Score tiempo: 1.00
+Score longitud: 0.50
+
+------------------------------------------------------------
+
+PREGUNTA 2
+Texto: ¿Dónde puedo comprar paracetamol en Providencia?
+Categoría: pharmacy_search
+Herramientas esperadas: search_farmacias
+Características clave: farmacia, providencia, dirección
+
+RESPUESTA:
+Tiempo: 12.16s
+Estado: success
+Texto: 
+
+EVALUACIÓN:
+Score final: 0.24
+Resultado: ❌ FALLO
+Características encontradas: 
+Score características: 0.00
+Score tiempo: 0.70
+Score longitud: 0.50
+
+------------------------------------------------------------
+
+PREGUNTA 3
+Texto: Busco información sobre el medicamento ibuprofeno
+Categoría: medication_search
+Herramientas esperadas: lookup_medicamento
+Características clave: ibuprofeno, medicamento, laboratorio
+
+RESPUESTA:
+Tiempo: 5.59s
+Estado: success
+Texto: 
+
+EVALUACIÓN:
+Score final: 0.30
+Resultado: ❌ FALLO
+Características encontradas: 
+Score características: 0.00
+Score tiempo: 1.00
+Score longitud: 0.50
+
+------------------------------------------------------------
+
+PREGUNTA 4
+Texto: ¿Qué farmacias están abiertas ahora en Santiago Centro?
+Categoría: pharmacy_search
+Herramientas esperadas: search_farmacias
+Características clave: farmacia, santiago, abierta, horario
+
+RESPUESTA:
+Tiempo: 12.68s
+Estado: success
+Texto: 
+
+EVALUACIÓN:
+Score final: 0.24
+Resultado: ❌ FALLO
+Características encontradas: 
+Score características: 0.00
+Score tiempo: 0.70
+Score longitud: 0.50
+
+------------------------------------------------------------
+
+PREGUNTA 5
+Texto: Dame la lista de todas las comunas disponibles
+Categoría: commune_info
+Herramientas esperadas: get_communes
+Características clave: comuna, disponible, lista
+
+RESPUESTA:
+Tiempo: 11.15s
+Estado: success
+Texto: 
+
+EVALUACIÓN:
+Score final: 0.24
+Resultado: ❌ FALLO
+Características encontradas: 
+Score características: 0.00
+Score tiempo: 0.70
+Score longitud: 0.50
+
+------------------------------------------------------------
+
+PREGUNTA 6
+Texto: Estoy en las coordenadas -33.4372, -70.6506, ¿hay farmacias cerca?
+Categoría: location_search
+Herramientas esperadas: search_farmacias_nearby
+Características clave: farmacia, cerca, coordenadas, ubicación
+
+RESPUESTA:
+Tiempo: 6.28s
+Estado: success
+Texto: 
+
+EVALUACIÓN:
+Score final: 0.30
+Resultado: ❌ FALLO
+Características encontradas: 
+Score características: 0.00
+Score tiempo: 1.00
+Score longitud: 0.50
+
+------------------------------------------------------------
+
+PREGUNTA 7
+Texto: ¿Tienen farmacias Cruz Verde en Maipú?
+Categoría: pharmacy_search
+Herramientas esperadas: search_farmacias
+Características clave: farmacia, maipú, cruz verde
+
+RESPUESTA:
+Tiempo: 11.57s
+Estado: success
+Texto: 
+
+EVALUACIÓN:
+Score final: 0.24
+Resultado: ❌ FALLO
+Características encontradas: 
+Score características: 0.00
+Score tiempo: 0.70
+Score longitud: 0.50
+
+------------------------------------------------------------
+
+PREGUNTA 8
+Texto: Necesito farmacias que vendan medicamentos controlados en Ñuñoa
+Categoría: pharmacy_search
+Herramientas esperadas: search_farmacias
+Características clave: farmacia, ñuñoa, controlado, medicamento
+
+RESPUESTA:
+Tiempo: 10.99s
+Estado: success
+Texto: 
+
+EVALUACIÓN:
+Score final: 0.24
+Resultado: ❌ FALLO
+Características encontradas: 
+Score características: 0.00
+Score tiempo: 0.70
+Score longitud: 0.50
+
+------------------------------------------------------------
+
+PREGUNTA 9
+Texto: ¿Cuáles son los horarios de farmacias en fines de semana en Valparaíso?
+Categoría: pharmacy_search
+Herramientas esperadas: search_farmacias
+Características clave: farmacia, valparaíso, horario, fin de semana
+
+RESPUESTA:
+Tiempo: 9.95s
+Estado: success
+Texto: 
+
+EVALUACIÓN:
+Score final: 0.30
+Resultado: ❌ FALLO
+Características encontradas: 
+Score características: 0.00
+Score tiempo: 1.00
+Score longitud: 0.50
+
+------------------------------------------------------------
+
+PREGUNTA 10
+Texto: Busco medicamentos para el dolor de cabeza, ¿qué opciones hay?
+Categoría: medication_safety
+Herramientas esperadas: lookup_medicamento
+Características clave: medicamento, dolor, cabeza, consulte, profesional
+
+RESPUESTA:
+Tiempo: 0.77s
+Estado: success
+Texto: 
+
+EVALUACIÓN:
+Score final: 0.30
+Resultado: ❌ FALLO
+Características encontradas: 
+Score características: 0.00
+Score tiempo: 1.00
+Score longitud: 0.50
+
+------------------------------------------------------------
+

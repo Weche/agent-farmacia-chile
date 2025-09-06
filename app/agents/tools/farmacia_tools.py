@@ -9,6 +9,7 @@ from typing import Dict, Any, List, Optional
 from app.agents.tools.base_tool import BaseTool
 from app.database import PharmacyDatabase
 from app.cache.redis_client import get_redis_client
+from app.utils.location_utils import enhance_pharmacy_info
 
 logger = logging.getLogger(__name__)
 
@@ -144,27 +145,11 @@ class SearchFarmaciasTool(BaseTool):
             # Apply limit
             farmacias_resultado = farmacias_filtradas[:limite] if limite > 0 else farmacias_filtradas
             
-            # Format results for agent
+            # Format results for agent with enhanced location features
             farmacias_formateadas = []
             for farmacia in farmacias_resultado:
-                farmacia_info = {
-                    "nombre": farmacia.nombre,
-                    "direccion": farmacia.direccion,
-                    "comuna": farmacia.comuna,
-                    "telefono": farmacia.telefono or "Sin teléfono",
-                    "horario": f"{farmacia.hora_apertura} - {farmacia.hora_cierre}" if farmacia.hora_apertura and farmacia.hora_cierre else "Sin información de horarios",
-                    "turno": farmacia.es_turno,
-                    "abierta": self.db.is_pharmacy_currently_open(farmacia),
-                    "cadena": "Independiente"  # Could be enhanced with actual chain data
-                }
-                
-                # Add coordinates if available
-                if farmacia.lat and farmacia.lng and farmacia.lat != 0.0 and farmacia.lng != 0.0:
-                    farmacia_info["ubicacion"] = {
-                        "latitud": farmacia.lat,
-                        "longitud": farmacia.lng
-                    }
-                
+                # Use enhanced formatting with location features
+                farmacia_info = enhance_pharmacy_info(farmacia, self.db)
                 farmacias_formateadas.append(farmacia_info)
             
             # Generate summary with helpful messaging
@@ -319,23 +304,11 @@ class SearchFarmaciasNearbyTool(BaseTool):
             # Apply limit
             farmacias_resultado = farmacias_cercanas[:limite] if limite > 0 else farmacias_cercanas
             
-            # Format results for agent
+            # Format results for agent with enhanced location features
             farmacias_formateadas = []
             for farmacia in farmacias_resultado:
-                farmacia_info = {
-                    "nombre": farmacia.nombre,
-                    "direccion": farmacia.direccion,
-                    "comuna": farmacia.comuna,
-                    "telefono": farmacia.telefono or "Sin teléfono",
-                    "horario": f"{farmacia.hora_apertura} - {farmacia.hora_cierre}",
-                    "turno": farmacia.es_turno,
-                    "abierta": self.db.is_pharmacy_currently_open(farmacia),
-                    "cadena": "Independiente",  # Default value
-                    "ubicacion": {
-                        "latitud": farmacia.lat,
-                        "longitud": farmacia.lng
-                    }
-                }
+                # Use enhanced formatting with location features
+                farmacia_info = enhance_pharmacy_info(farmacia, self.db)
                 farmacias_formateadas.append(farmacia_info)
             
             # Determine message based on results

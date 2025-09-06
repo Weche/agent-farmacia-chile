@@ -218,12 +218,75 @@
             margin-top: 15px;
         }
 
+        .no-data {
+            text-align: center;
+            color: #666;
+            padding: 20px;
+            background: #f5f5f5;
+            border-radius: 8px;
+            margin: 10px 0;
+        }
+
+        .status-healthy {
+            background: #e8f5e8;
+            color: #2e7d32;
+        }
+
+        .status-warning {
+            background: #fff3e0;
+            color: #ef6c00;
+        }
+
         .commune-item {
             display: flex;
             justify-content: space-between;
             padding: 5px 10px;
             background: #f8f9fa;
             border-radius: 6px;
+            font-size: 0.9em;
+        }
+
+        .session-item {
+            background: #f8f9fa;
+            border-radius: 8px;
+            padding: 12px;
+            margin: 8px 0;
+            border-left: 4px solid #28a745;
+            transition: all 0.2s ease;
+        }
+
+        .session-item:hover {
+            background: #e9ecef;
+            transform: translateX(2px);
+        }
+
+        .session-item.inactive {
+            border-left-color: #6c757d;
+            opacity: 0.7;
+        }
+
+        .session-id {
+            font-family: monospace;
+            background: #ffffff;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-size: 0.9em;
+            color: #495057;
+        }
+
+        .session-details {
+            font-size: 0.85em;
+            color: #6c757d;
+            margin-top: 4px;
+        }
+
+        .protected-info {
+            background: #fff3cd;
+            border: 1px solid #ffeaa7;
+            border-radius: 6px;
+            padding: 10px;
+            margin: 10px 0;
+            color: #856404;
             font-size: 0.9em;
         }
 
@@ -295,12 +358,17 @@
                     </div>
                     <div id="freshness-metrics"></div>
                     <div class="action-section">
-                        <button class="action-btn warning" onclick="updateData()">
-                            🔄 Actualizar Datos
-                        </button>
                         <button class="action-btn" onclick="checkFreshness()">
                             📊 Verificar Estado
                         </button>
+                        <div id="admin-data-controls" style="display: none; margin-top: 10px; padding-top: 10px; border-top: 1px solid #dee2e6;">
+                            <div style="background: #fff3cd; padding: 8px; border-radius: 4px; margin-bottom: 8px; font-size: 0.9em; color: #856404;">
+                                � <strong>Controles de Administrador</strong> - Actualización de base de datos
+                            </div>
+                            <button id="update-data-btn" class="action-btn warning" onclick="updateData()">
+                                � Actualizar Datos (Admin)
+                            </button>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -314,7 +382,48 @@
                 <div id="communes-list"></div>
             </div>
 
+            <!-- Chat Sessions -->
+            <div class="status-card">
+                <div class="card-header">
+                    <span class="status-icon">💬</span>
+                    <span class="card-title">Sesiones de Chat Activas</span>
+                    <span id="chat-status" class="status-indicator">...</span>
+                </div>
+                <div class="protected-info">
+                    🔒 <strong>Sistema de Autenticación Multi-Nivel:</strong><br>
+                    <strong>Vista Pública:</strong> Solo estadísticas básicas (sin IDs ni detalles)<br>
+                    <strong>Vista Admin:</strong> Lista completa de sesiones con IDs<br>
+                    <strong>Detalles Completos:</strong> Historial de conversaciones (solo admin)<br>
+                    <br>
+                    <strong>Métodos de autenticación:</strong><br>
+                    • 👤 <strong>Usuario/Contraseña:</strong> pharmacy_admin / SecurePharmacy2024!<br>
+                    • 🔑 <strong>Clave Admin:</strong> PharmacyAdmin2024! (solo desarrollo)
+                </div>
+                <div id="chat-sessions" class="metrics-list">
+                    <div class="loading">🔄 Cargando sesiones...</div>
+                </div>
+                <div class="actions">
+                    <button class="action-btn" onclick="loadChatSessions()">
+                        🔄 Actualizar Estadísticas
+                    </button>
+                    <button class="action-btn warning" onclick="loadAuthenticatedSessions()">
+                        🔑 Ver Sesiones (Admin)
+                    </button>
+                    <button class="action-btn info" onclick="showSessionDetails()">
+                        📝 Ver Detalles (Admin)
+                    </button>
+                </div>
+            </div>
+
             <button class="refresh-btn" onclick="loadStatus()">🔄 Actualizar Estado</button>
+            <button class="action-btn" onclick="goToChat()" style="background: #28a745;">💬 Ir al Chat</button>
+            
+            <div id="status-controls" style="text-align: center; margin: 15px 0; padding: 10px; background: rgba(255,255,255,0.1); border-radius: 8px;">
+                <span id="auth-status" style="color: white; font-size: 0.9em;">🔓 Vista pública</span>
+                <span style="color: white; margin: 0 15px;">|</span>
+                <span id="refresh-status" style="color: white; font-size: 0.9em;">🔄 Auto-refresh: 30s</span>
+            </div>
+            
             <div id="timestamp" class="timestamp"></div>
         </div>
     </div>
@@ -337,6 +446,9 @@
                 updateSystemStatus(data.components.system);
                 updateFreshnessStatus(data.components.database);
                 updateTimestamp(data.timestamp);
+
+                // Load chat sessions
+                loadChatSessions();
 
                 loading.style.display = 'none';
                 content.style.display = 'block';
@@ -521,52 +633,102 @@
                 statusEl.textContent = '❌ Desactualizado';
             }
 
-            // Update metrics
-            const freshness = data.freshness;
+            // Update metrics using the actual API structure
+            const fileInfo = data.file_info || {};
+            const statistics = data.statistics || {};
+            
+            // Calculate days since last update
+            let daysSince = 'Desconocido';
+            let hoursSince = 'Desconocido';
+            
+            if (fileInfo.last_modified) {
+                const lastModified = new Date(fileInfo.last_modified);
+                const now = new Date();
+                const diffMs = now - lastModified;
+                const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+                const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
+                daysSince = diffDays;
+                hoursSince = diffHours;
+            }
+            
             metricsEl.innerHTML = `
                 <div class="metric">
                     <span class="metric-label">Última Actualización</span>
-                    <span class="metric-value">${freshness.latest_update || 'Desconocido'}</span>
+                    <span class="metric-value">${fileInfo.last_modified || 'Desconocido'}</span>
                 </div>
                 <div class="metric">
                     <span class="metric-label">Días Transcurridos</span>
-                    <span class="metric-value">${freshness.days_since_update || 'Desconocido'}</span>
+                    <span class="metric-value">${daysSince}</span>
                 </div>
                 <div class="metric">
                     <span class="metric-label">Horas Transcurridas</span>
-                    <span class="metric-value">${freshness.hours_since_update || 'Desconocido'}</span>
+                    <span class="metric-value">${hoursSince}</span>
                 </div>
                 <div class="metric">
-                    <span class="metric-label">Archivo DB Modificado</span>
-                    <span class="metric-value">${freshness.db_file_modified || 'Desconocido'}</span>
+                    <span class="metric-label">Tamaño DB</span>
+                    <span class="metric-value">${fileInfo.size_mb || 0} MB</span>
+                </div>
+                <div class="metric">
+                    <span class="metric-label">Total Farmacias</span>
+                    <span class="metric-value">${statistics.total_pharmacies || 0}</span>
                 </div>
                 <div class="freshness-section">
-                    <div class="freshness-title">Estado: ${data.message}</div>
+                    <div class="freshness-title">Estado: ${data.status === 'healthy' ? 'Base de datos actualizada' : 'Revisar actualizaciones'}</div>
                 </div>
             `;
         }
 
         async function updateData() {
-            const button = event.target;
+            if (!isAuthenticated) {
+                alert('⚠️ Se requiere autenticación de administrador para actualizar datos');
+                return;
+            }
+            
+            const confirmUpdate = confirm('¿Confirmar actualización de datos de la base de datos?\n\nEsto puede tardar varios minutos.');
+            if (!confirmUpdate) return;
+            
+            const button = document.getElementById('update-data-btn');
             const originalText = button.textContent;
             
             button.textContent = '🔄 Actualizando...';
             button.disabled = true;
             
             try {
-                const response = await fetch('/api/data/update', {
-                    method: 'POST'
+                // Build auth headers
+                const headers = { 'Content-Type': 'application/json' };
+                if (authMethod === 'userpass') {
+                    headers['username'] = username;
+                    headers['password'] = password;
+                } else if (authMethod === 'adminkey') {
+                    headers['admin-key'] = adminKey;
+                }
+                
+                // Call the actual update endpoint
+                const response = await fetch('/api/status/update-data', {
+                    method: 'POST',
+                    headers: headers
                 });
+                
                 const result = await response.json();
                 
-                if (result.status === 'success') {
-                    alert('✅ Datos actualizados exitosamente!');
-                    loadStatus(); // Reload the status
+                if (response.ok) {
+                    alert('✅ ' + result.message);
+                    // Refresh status after successful update
+                    await loadStatus();
                 } else {
-                    alert(`❌ Error actualizando datos: ${result.message}`);
+                    throw new Error(result.detail || 'Error al actualizar datos');
                 }
+                
             } catch (error) {
-                alert(`❌ Error: ${error.message}`);
+                console.error('Error updating data:', error);
+                alert(`❌ Error actualizando datos: ${error.message}`);
+                
+                // Fallback: just refresh status
+                try {
+                    await loadStatus();
+                } catch (fallbackError) {
+                    console.error('Fallback error:', fallbackError);
+                }
             } finally {
                 button.textContent = originalText;
                 button.disabled = false;
@@ -581,15 +743,40 @@
             button.disabled = true;
             
             try {
-                const response = await fetch('/api/data/freshness');
+                const response = await fetch('/api/status');
                 const result = await response.json();
                 
-                const freshness = result.data_freshness;
+                const dbData = result.components.database;
+                const fileInfo = dbData.file_info || {};
+                const statistics = dbData.statistics || {};
+                
+                // Calculate freshness info
+                let daysSince = 'Desconocido';
+                let status = 'healthy';
+                let recommendation = 'Datos actualizados';
+                
+                if (fileInfo.last_modified) {
+                    const lastModified = new Date(fileInfo.last_modified);
+                    const now = new Date();
+                    const diffMs = now - lastModified;
+                    const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+                    daysSince = diffDays;
+                    
+                    if (diffDays > 7) {
+                        status = 'warning';
+                        recommendation = 'Se recomienda actualizar los datos';
+                    } else if (diffDays > 30) {
+                        status = 'error';
+                        recommendation = 'Datos desactualizados - actualización requerida';
+                    }
+                }
+                
                 alert(`📅 Estado de Datos:\n\n` +
-                      `Estado: ${freshness.overall_status}\n` +
-                      `Última actualización: ${freshness.latest_update}\n` +
-                      `Días transcurridos: ${freshness.days_since_update}\n` +
-                      `Recomendación: ${freshness.recommendation}`);
+                      `Estado: ${status === 'healthy' ? '✅ Actualizado' : status === 'warning' ? '⚠️ Atención' : '❌ Desactualizado'}\n` +
+                      `Última actualización: ${fileInfo.last_modified || 'Desconocido'}\n` +
+                      `Días transcurridos: ${daysSince}\n` +
+                      `Total farmacias: ${statistics.total_pharmacies || 0}\n` +
+                      `Recomendación: ${recommendation}`);
                       
                 loadStatus(); // Reload the status
             } catch (error) {
@@ -600,11 +787,438 @@
             }
         }
 
-        // Load status on page load
-        loadStatus();
+        // Chat Sessions Functions
+        async function loadChatSessions() {
+            const statusEl = document.getElementById('chat-status');
+            const sessionsEl = document.getElementById('chat-sessions');
+            
+            statusEl.textContent = '🔄 Cargando...';
+            
+            try {
+                const response = await fetch('/api/status/chat-sessions/stats');
+                const data = await response.json();
+                
+                if (data.status === 'success') {
+                    statusEl.className = 'status-indicator status-healthy';
+                    statusEl.textContent = `✅ ${data.active_sessions}/${data.total_sessions} activas`;
+                    
+                    sessionsEl.innerHTML = `
+                        <div class="protected-info" style="margin: 10px 0;">
+                            🔒 <strong>Sesiones protegidas:</strong> ${data.total_sessions} sesiones encontradas<br>
+                            📊 <strong>Estado:</strong> ${data.active_sessions} activas, ${data.total_sessions - data.active_sessions} inactivas<br>
+                            <em>${data.message}</em>
+                        </div>
+                        <div style="text-align: center; padding: 20px; background: #f8f9fa; border-radius: 6px; color: #666;">
+                            � Para ver detalles, use el botón "Ver Detalles (Admin)" con autenticación
+                        </div>
+                    `;
+                } else {
+                    statusEl.className = 'status-indicator status-error';
+                    statusEl.textContent = '❌ Error';
+                    sessionsEl.innerHTML = `<div class="error">Error: ${data.error}</div>`;
+                }
+                
+            } catch (error) {
+                statusEl.className = 'status-indicator status-error';
+                statusEl.textContent = '❌ Error';
+                sessionsEl.innerHTML = `<div class="error">Error cargando estadísticas: ${error.message}</div>`;
+            }
+        }
 
-        // Auto-refresh every 30 seconds
-        setInterval(loadStatus, 30000);
+        async function loadAuthenticatedSessions() {
+            // This function will be called when user authenticates
+            const authMethodChoice = confirm(
+                'Autenticación requerida para ver sesiones:\n\n' +
+                '✅ OK: Usar Usuario/Contraseña\n' +
+                '❌ Cancelar: Usar Clave Admin\n\n' +
+                '¿Usar Usuario/Contraseña?'
+            );
+            
+            let queryParams;
+            
+            if (authMethodChoice) {
+                const username = prompt('Ingrese el nombre de usuario:');
+                if (!username) return;
+                
+                const password = prompt('Ingrese la contraseña:');
+                if (!password) return;
+                
+                queryParams = `username=${encodeURIComponent(username)}&admin_key=${encodeURIComponent(password)}`;
+                authMethod = 'userpass';
+            } else {
+                const adminKey = prompt('Ingrese la clave de administrador:');
+                if (!adminKey) return;
+                
+                queryParams = `admin_key=${encodeURIComponent(adminKey)}`;
+                authMethod = 'adminkey';
+            }
+            
+            const statusEl = document.getElementById('chat-status');
+            const sessionsEl = document.getElementById('chat-sessions');
+            
+            try {
+                const response = await fetch(`/api/status/chat-sessions?${queryParams}`);
+                const data = await response.json();
+                
+                if (response.ok && data.status === 'success') {
+                    // Store authentication state
+                    isAuthenticated = true;
+                    currentAuthParams = queryParams;
+                    
+                    // Update display
+                    updateSessionsDisplay(data);
+                    
+                    // Pause auto-refresh to not lose auth state
+                    pauseAutoRefresh();
+                    
+                    // Start smart refresh that preserves auth
+                    startAutoRefresh();
+                    
+                    // Update indicators
+                    updateStatusIndicators();
+                    
+                } else {
+                    alert('❌ Error de autenticación: ' + (data.detail || data.error || 'Credenciales inválidas'));
+                    loadChatSessions(); // Volver a mostrar vista pública
+                }
+                
+            } catch (error) {
+                alert('❌ Error: ' + error.message);
+                loadChatSessions(); // Volver a mostrar vista pública
+            }
+        }
+
+        function formatTime(timeStr) {
+            if (!timeStr || timeStr === 'Unknown') return 'Desconocido';
+            try {
+                const date = new Date(timeStr);
+                return date.toLocaleString('es-ES', {
+                    month: 'short',
+                    day: 'numeric',
+                    hour: '2-digit',
+                    minute: '2-digit'
+                });
+            } catch {
+                return timeStr;
+            }
+        }
+
+        function goToChat() {
+            window.location.href = '/';
+        }
+
+        async function showSessionDetails() {
+            let queryParams = currentAuthParams;
+            let authMethodChoice = authMethod;
+            
+            // If not already authenticated, ask for credentials
+            if (!isAuthenticated || !currentAuthParams) {
+                authMethodChoice = confirm(
+                    '🔐 PASO 1: Autenticación\n\n' +
+                    'Seleccione método de autenticación:\n\n' +
+                    '✅ OK: Usar Usuario/Contraseña (Recomendado)\n' +
+                    '❌ Cancelar: Usar Clave Admin (Solo desarrollo)\n\n' +
+                    '¿Usar Usuario/Contraseña?'
+                );
+                
+                if (authMethodChoice) {
+                    // Username/Password method
+                    const userInput = prompt('👤 Ingrese el nombre de usuario:');
+                    if (!userInput) return;
+                    
+                    const passInput = prompt('🔑 Ingrese la contraseña:');
+                    if (!passInput) return;
+                    
+                    setAuthState('userpass', userInput, passInput, null);
+                    queryParams = `username=${encodeURIComponent(userInput)}&admin_key=${encodeURIComponent(passInput)}`;
+                } else {
+                    // Admin key method (fallback)
+                    const keyInput = prompt(
+                        '⚠️ MODO DESARROLLO\n\n' +
+                        'Ingrese la clave de administrador:\n' +
+                        '(Este método no es recomendado para producción)'
+                    );
+                    if (!keyInput) return;
+                    
+                    setAuthState('adminkey', null, null, keyInput);
+                    queryParams = `admin_key=${encodeURIComponent(keyInput)}`;
+                }
+            }
+            
+            // Step 2: Get session list first to show available sessions
+            try {
+                const sessionsResponse = await fetch(`/api/status/chat-sessions?${queryParams}`);
+                const sessionsData = await sessionsResponse.json();
+                
+                if (!sessionsResponse.ok) {
+                    throw new Error(sessionsData.detail || sessionsData.error || 'Error de autenticación');
+                }
+                
+                // Store auth params if authentication was successful
+                if (!isAuthenticated) {
+                    currentAuthParams = queryParams;
+                }
+                
+                if (sessionsData.sessions.length === 0) {
+                    alert('ℹ️ No hay sesiones disponibles');
+                    return;
+                }
+                
+                // Show available sessions
+                const sessionsList = sessionsData.sessions.map((s, index) => 
+                    `${index + 1}. ${s.id_display} (${s.message_count} mensajes, ${s.status})`
+                ).join('\\n');
+                
+                const sessionId = prompt(
+                    `📋 PASO 2: Seleccione una sesión\n\n` +
+                    `Sesiones disponibles:\n${sessionsList}\n\n` +
+                    `Ingrese el ID COMPLETO de la sesión que desea ver:\n` +
+                    `(Copie el ID completo de la lista mostrada arriba)`
+                );
+                
+                if (!sessionId) return;
+                
+                // Step 3: Get detailed session info
+                const detailUrl = `/api/status/chat-sessions/details?session_id=${encodeURIComponent(sessionId)}&${queryParams}`;
+                const response = await fetch(detailUrl);
+                const data = await response.json();
+                
+                if (response.ok && data.status === 'success') {
+                    const detailsWindow = window.open('', '_blank', 'width=900,height=700,scrollbars=yes');
+                    detailsWindow.document.write(`
+                        <html>
+                        <head>
+                            <title>Detalles de Sesión - ${data.session_id}</title>
+                            <style>
+                                body { font-family: Arial, sans-serif; margin: 20px; background: #f8f9fa; }
+                                .container { max-width: 800px; margin: 0 auto; }
+                                .header { background: white; padding: 20px; border-radius: 8px; margin-bottom: 20px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+                                .section { background: white; padding: 15px; border-radius: 8px; margin-bottom: 15px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+                                pre { background: #f5f5f5; padding: 15px; border-radius: 5px; overflow-x: auto; border-left: 4px solid #007bff; }
+                                .info { background: #e7f3ff; padding: 12px; border-radius: 5px; margin: 10px 0; border-left: 4px solid #007bff; }
+                                .warning { background: #fff3cd; padding: 12px; border-radius: 5px; margin: 10px 0; border-left: 4px solid #ffc107; }
+                                h2 { color: #343a40; margin-top: 0; }
+                                h3 { color: #495057; border-bottom: 2px solid #dee2e6; padding-bottom: 8px; }
+                                .stat { display: inline-block; background: #e9ecef; padding: 8px 12px; margin: 4px; border-radius: 4px; }
+                            </style>
+                        </head>
+                        <body>
+                            <div class="container">
+                                <div class="header">
+                                    <h2>🔍 Detalles de Sesión</h2>
+                                    <div class="info">
+                                        <strong>Session ID:</strong> <code>${data.session_id}</code><br>
+                                        <strong>Autenticación:</strong> ${authMethodChoice ? '👤 Usuario/Contraseña' : '🔑 Clave Admin'}<br>
+                                        <strong>Estado:</strong> ${isAuthenticated ? '🔐 Sesión persistente activa' : '🔓 Autenticación única'}<br>
+                                        <strong>Fecha de consulta:</strong> ${new Date().toLocaleString('es-ES')}
+                                    </div>
+                                </div>
+                                
+                                <div class="section">
+                                    <h3>📊 Estadísticas</h3>
+                                    <span class="stat">💬 ${data.message_count} mensajes</span>
+                                    <span class="stat">📝 Método: ${authMethodChoice ? 'Seguro' : 'Desarrollo'}</span>
+                                    <span class="stat">🔒 Auth: ${isAuthenticated ? 'Persistente' : 'Temporal'}</span>
+                                </div>
+                                
+                                <div class="section">
+                                    <h3>ℹ️ Datos de Sesión</h3>
+                                    <pre>${JSON.stringify(data.session_data, null, 2)}</pre>
+                                </div>
+                                
+                                <div class="section">
+                                    <h3>💬 Historial de Mensajes</h3>
+                                    <div class="warning">
+                                        <strong>⚠️ Información Sensible:</strong> Este historial contiene datos de conversaciones reales del usuario.
+                                    </div>
+                                    <pre>${JSON.stringify(data.messages, null, 2)}</pre>
+                                </div>
+                                
+                                <div style="text-align: center; margin-top: 30px; padding: 20px; background: #f8f9fa; border-radius: 8px;">
+                                    <button onclick="window.close()" style="background: #6c757d; color: white; border: none; padding: 10px 20px; border-radius: 4px; cursor: pointer;">
+                                        Cerrar Ventana
+                                    </button>
+                                </div>
+                            </div>
+                        </body>
+                        </html>
+                    `);
+                } else {
+                    const errorMsg = data.detail || data.error || 'Error al obtener detalles de la sesión';
+                    if (response.status === 403) {
+                        alert('🔒 ACCESO DENEGADO\n\n' + errorMsg + '\n\n' + 
+                              (authMethodChoice ? 
+                              'Verifique su usuario y contraseña.' : 
+                              'Verifique su clave de administrador.'));
+                    } else {
+                        alert('❌ ERROR\n\n' + errorMsg);
+                    }
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                alert('❌ Error de conexión:\n\n' + error.message);
+            }
+        }
+
+        // Global state management
+        let isAuthenticated = false;
+        let currentAuthParams = '';
+        let autoRefreshInterval = null;
+        let authMethod = null;
+        let username = null;
+        let password = null;
+        let adminKey = null;
+
+        // Function to reset authentication state
+        function resetAuthState() {
+            isAuthenticated = false;
+            currentAuthParams = '';
+            authMethod = null;
+            username = null;
+            password = null;
+            adminKey = null;
+        }
+
+        // Function to set authentication state
+        function setAuthState(method, user, pass, key) {
+            isAuthenticated = true;
+            authMethod = method;
+            username = user;
+            password = pass;
+            adminKey = key;
+        }
+
+        function updateStatusIndicators() {
+            const authStatusEl = document.getElementById('auth-status');
+            const refreshStatusEl = document.getElementById('refresh-status');
+            const adminDataControls = document.getElementById('admin-data-controls');
+            
+            if (authStatusEl) {
+                if (isAuthenticated) {
+                    authStatusEl.innerHTML = `🔐 Autenticado (${authMethod === 'userpass' ? 'Usuario/Pass' : 'Admin Key'})`;
+                } else {
+                    authStatusEl.innerHTML = '🔓 Vista pública';
+                }
+            }
+            
+            if (refreshStatusEl) {
+                if (autoRefreshInterval) {
+                    refreshStatusEl.innerHTML = isAuthenticated ? '🔄 Auto-refresh: inteligente' : '🔄 Auto-refresh: 30s';
+                } else {
+                    refreshStatusEl.innerHTML = '⏸️ Auto-refresh pausado';
+                }
+            }
+            
+            // Show/hide admin controls
+            if (adminDataControls) {
+                adminDataControls.style.display = isAuthenticated ? 'block' : 'none';
+            }
+        }
+
+        function startAutoRefresh() {
+            if (autoRefreshInterval) {
+                clearInterval(autoRefreshInterval);
+            }
+            // Only auto-refresh basic status, not sessions if authenticated
+            autoRefreshInterval = setInterval(() => {
+                loadBasicStatus();
+                if (isAuthenticated) {
+                    // Keep authenticated sessions updated but don't reset auth
+                    loadAuthenticatedSessionsSilent();
+                }
+            }, 30000);
+            updateStatusIndicators();
+        }
+
+        function pauseAutoRefresh() {
+            if (autoRefreshInterval) {
+                clearInterval(autoRefreshInterval);
+                autoRefreshInterval = null;
+            }
+            updateStatusIndicators();
+        }
+
+        async function loadBasicStatus() {
+            // Load only the basic status components, not sessions
+            try {
+                const response = await fetch('/api/status');
+                const data = await response.json();
+
+                // Update only basic components
+                updateDatabaseStatus(data.components.database);
+                updateRedisStatus(data.components.redis);
+                updateSystemStatus(data.components.system);
+                updateTimestamp();
+            } catch (error) {
+                console.error('Error loading basic status:', error);
+            }
+        }
+
+        async function loadAuthenticatedSessionsSilent() {
+            // Silently refresh authenticated sessions without resetting UI
+            if (!isAuthenticated || !currentAuthParams) return;
+            
+            try {
+                const response = await fetch(`/api/status/chat-sessions?${currentAuthParams}`);
+                const data = await response.json();
+                
+                if (response.ok && data.status === 'success') {
+                    // Update sessions display without changing auth state
+                    updateSessionsDisplay(data);
+                }
+            } catch (error) {
+                console.error('Error refreshing sessions:', error);
+            }
+        }
+
+        function updateSessionsDisplay(data) {
+            const statusEl = document.getElementById('chat-status');
+            const sessionsEl = document.getElementById('chat-sessions');
+            
+            statusEl.className = 'status-indicator status-healthy';
+            statusEl.textContent = `✅ ${data.active_sessions}/${data.total_sessions} activas`;
+            
+            if (data.sessions.length === 0) {
+                sessionsEl.innerHTML = '<div class="no-data">📭 No hay sesiones activas</div>';
+            } else {
+                sessionsEl.innerHTML = `
+                    <div class="protected-info" style="margin-bottom: 15px;">
+                        ✅ <strong>Autenticado correctamente</strong> - Mostrando detalles completos
+                        <button onclick="logoutSessions()" style="float: right; background: #dc3545; color: white; border: none; padding: 4px 8px; border-radius: 4px; font-size: 11px; cursor: pointer;">
+                            🚪 Cerrar Sesión
+                        </button>
+                    </div>
+                ` + data.sessions.map(session => `
+                    <div class="session-item ${session.status}">
+                        <div style="display: flex; justify-content: space-between; align-items: center;">
+                            <span class="session-id">${session.id_display}</span>
+                            <span class="metric-value ${session.status === 'active' ? 'status-healthy' : 'status-warning'}" style="font-size: 10px; padding: 2px 6px; border-radius: 3px;">
+                                ${session.status === 'active' ? '🟢 ACTIVA' : '🟡 INACTIVA'}
+                            </span>
+                        </div>
+                        <div class="session-details">
+                            💬 ${session.message_count} mensajes | 
+                            ⏰ ${formatTime(session.last_activity)} |
+                            📝 ID: ${session.id}
+                        </div>
+                    </div>
+                `).join('');
+            }
+        }
+
+        function logoutSessions() {
+            isAuthenticated = false;
+            currentAuthParams = '';
+            authMethod = null;
+            loadChatSessions(); // Back to public view
+            startAutoRefresh(); // Resume normal auto-refresh
+            updateStatusIndicators();
+        }
+
+        // Initialize page
+        loadStatus();
+        startAutoRefresh();
+        updateStatusIndicators();
     </script>
 </body>
 </html>
