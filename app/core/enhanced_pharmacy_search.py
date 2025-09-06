@@ -1,16 +1,16 @@
 """
-Enhanced Database Search with Smart Commune Matching
-Integrates the smart matcher into the existing database search system
+Enhanced Database Search with LLM-Enhanced Smart Commune Matching
+Integrates the LLM-enhanced matcher into the existing database search system
 """
 from app.database import PharmacyDatabase
-from smart_commune_matcher import SmartCommuneMatcher, MatchResult
+from app.core.llm_enhanced_commune_matcher import LLMEnhancedCommuneMatcher, MatchResult
 from typing import List, Dict, Optional, Tuple
 import logging
 
 logger = logging.getLogger(__name__)
 
 class EnhancedPharmacyDatabase(PharmacyDatabase):
-    """Enhanced pharmacy database with smart commune matching"""
+    """Enhanced pharmacy database with LLM-enhanced smart commune matching"""
     
     def __init__(self, db_path: str = "pharmacy_finder.db"):
         super().__init__(db_path)
@@ -18,12 +18,12 @@ class EnhancedPharmacyDatabase(PharmacyDatabase):
         self._initialize_smart_matcher()
     
     def _initialize_smart_matcher(self):
-        """Initialize the smart commune matcher"""
+        """Initialize the LLM-enhanced smart commune matcher"""
         try:
-            self.smart_matcher = SmartCommuneMatcher()
-            logger.info("✅ Smart commune matcher initialized")
+            self.smart_matcher = LLMEnhancedCommuneMatcher()
+            logger.info("✅ LLM-enhanced smart commune matcher initialized")
         except Exception as e:
-            logger.warning(f"⚠️ Could not initialize smart matcher: {e}")
+            logger.warning(f"⚠️ Could not initialize LLM-enhanced matcher: {e}")
             self.smart_matcher = None
     
     def smart_find_by_comuna(self, comuna_query: str, only_open: bool = False, 
@@ -54,13 +54,13 @@ class EnhancedPharmacyDatabase(PharmacyDatabase):
             )
             return pharmacies, match_result
         
-        # Use smart matching
+        # Use LLM-enhanced smart matching
         match_result = self.smart_matcher.smart_match(comuna_query)
         
         if match_result.confidence >= confidence_threshold and match_result.matched_commune:
             # High confidence match - proceed with search
             pharmacies = self.find_by_comuna(match_result.matched_commune, only_open)
-            logger.info(f"Smart match: '{comuna_query}' -> '{match_result.matched_commune}' "
+            logger.info(f"LLM-enhanced match: '{comuna_query}' -> '{match_result.matched_commune}' "
                        f"(confidence: {match_result.confidence:.3f}, method: {match_result.method})")
             return pharmacies, match_result
         
@@ -84,30 +84,27 @@ class EnhancedPharmacyDatabase(PharmacyDatabase):
         
         # Include the matched commune if confidence is reasonable
         if match_result.matched_commune and match_result.confidence >= 0.5:
-            commune_info = self.smart_matcher.get_commune_info(match_result.matched_commune)
-            if commune_info:
-                suggestions.append({
-                    'name': match_result.matched_commune,
-                    'confidence': match_result.confidence,
-                    'method': match_result.method,
-                    'pharmacies_count': commune_info['statistics']['total_pharmacies'],
-                    'turno_count': commune_info['statistics']['turno_pharmacies'],
-                    'region': commune_info['region']
-                })
+            # Simple suggestion without detailed info (for now)
+            suggestions.append({
+                'name': match_result.matched_commune,
+                'confidence': match_result.confidence,
+                'method': match_result.method,
+                'pharmacies_count': 0,  # TODO: Get from database
+                'turno_count': 0,  # TODO: Get from database
+                'region': 'Unknown'  # TODO: Get from database
+            })
         
         # Add other suggestions
         for suggestion in match_result.suggestions[:max_suggestions-1]:
             if suggestion != match_result.matched_commune:  # Avoid duplicates
-                commune_info = self.smart_matcher.get_commune_info(suggestion)
-                if commune_info:
-                    suggestions.append({
-                        'name': suggestion,
-                        'confidence': 0.0,  # These are just suggestions
-                        'method': 'suggestion',
-                        'pharmacies_count': commune_info['statistics']['total_pharmacies'],
-                        'turno_count': commune_info['statistics']['turno_pharmacies'],
-                        'region': commune_info['region']
-                    })
+                suggestions.append({
+                    'name': suggestion,
+                    'confidence': 0.0,  # These are just suggestions
+                    'method': 'suggestion',
+                    'pharmacies_count': 0,  # TODO: Get from database
+                    'turno_count': 0,  # TODO: Get from database
+                    'region': 'Unknown'  # TODO: Get from database
+                })
         
         return suggestions[:max_suggestions]
 

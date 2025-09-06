@@ -1,0 +1,13 @@
+LAS CONDES FIX TEST
+==============================
+
+Query 1: 'dame una lista de farmacias en las condes'
+Tools used: ['search_farmacias']
+Success: True
+Used correct tool: True
+
+Query 2: '¿hay farmacias en providencia?'
+Tools used: []
+Used correct tool: False
+
+❌ FIX FAILED: Agent still confused about tool selection

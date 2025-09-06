@@ -11,6 +11,7 @@ import os
 from app.services.minsal_client import get_locales, get_locales_turno
 from app.services.vademecum_service import load_vademecum, search_vademecum
 from app.database import PharmacyDatabase
+from app.core.enhanced_pharmacy_search import EnhancedPharmacyDatabase
 from app.cache.redis_client import get_redis_client
 from app.cache.invalidation import get_invalidation_manager, manual_cache_invalidation
 from app.middleware.cache_middleware import CacheMiddleware, cache_warmup, cache_health_check
@@ -32,8 +33,8 @@ APP_NAME = os.getenv("APP_NAME", "Farmacias de Turno + Vademécum (MVP v2)")
 ENV = os.getenv("ENV", "dev")
 VADEMECUM_PATH = os.getenv("VADEMECUM_PATH", "./data/vademecum_clean.parquet")
 
-# Initialize database
-db = PharmacyDatabase()
+# Initialize Enhanced database with LLM-enhanced commune matching
+db = EnhancedPharmacyDatabase()
 
 # Initialize Spanish AI Agent (will be done on startup)
 spanish_agent = None

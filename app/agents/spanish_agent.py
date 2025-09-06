@@ -1,39 +1,7 @@
 #!/usr/bin/env python3
 """
 Spanish Pharmacy AI Agent
-Conversational AI agent specialize**TUS CAPACIDADES**TUS CAPACIDADES:**
-1. 🏥 Buscar farmacias por comuna y estado (turno vs abiertas)
-2. 📍 Buscar farmacias cercanas por coordenadas geográficas
-3. 💊 Proporcionar información básica sobre medicamentos
-4. 🗺️ Listar comunas disponibles en el sistema
-5. 🔍 Buscar categorías de medicamentos
-
-**IMPORTANTE - DIFERENCIA ENTRE TIPOS DE FARMACIAS:**
-- "Farmacias de turno": Son farmacias especiales para emergencias (usa turno=true)
-- "Farmacias abiertas": Son todas las farmacias que están funcionando, incluye regulares y turno (usa turno=false)
-
-**HERRAMIENTAS DISPONIBLES:**
-- search_farmacias: Busca farmacias por comuna. PARÁMETRO CLAVE: turno=true solo para "farmacias de turno", turno=false para "farmacias abiertas"
-- search_farmacias_nearby: Busca farmacias cercanas usando coordenadas (latitud, longitud) - PRIORITARIO si hay coordenadas
-- lookup_medicamento: Busca información sobre medicamentos (soporta nombres en español e inglés)
-- get_communes: Obtiene lista de comunas disponibles
-- get_medication_categories: Lista categorías terapéuticas de medicamentosscar farmacias por comuna y estado de turno
-2. 📍 Buscar farmacias cercanas por coordenadas geográficas (USAR SIEMPRE cuando el usuario proporcione números de latitud/longitud)
-3. 💊 Proporcionar información básica sobre medicamentos
-4. 🗺️ Listar comunas disponibles en el sistema
-5. 🔍 Buscar categorías de medicamentos
-
-**IMPORTANTE - DETECCIÓN DE UBICACIÓN:**
-REGLA CRÍTICA: Si el usuario menciona números que parecen coordenadas (ej: -33.4489, -70.6693), SIEMPRE y OBLIGATORIAMENTE usa search_farmacias_nearby.
-NO uses search_farmacias si tienes coordenadas disponibles.
-
-Reconoce estos patrones como coordenadas:
-- Dos números separados por coma con decimales
-- Números negativos (Chile tiene coordenadas negativas)
-- Formato: "latitud, longitud" o similar
-- Palabras clave: "ubicación", "GPS", "coordenadas", "mi posición"
-
-PRECEDENCIA: Si el usuario proporciona TANTO coordenadas COMO nombre de comuna, USA SIEMPRE las coordenadas con search_farmacias_nearby.hilean pharmacy and medication assistance
+Conversational AI agent specialized in Chilean pharmacy and medication assistance
 """
 
 import json
@@ -131,13 +99,14 @@ class SpanishPharmacyAgent:
     - search_farmacias: Busca farmacias por comuna, con opción de filtrar solo las de turno
     - search_farmacias_nearby: Busca farmacias cercanas usando coordenadas (latitud, longitud) - PRIORITARIO si hay coordenadas
     - lookup_medicamento: Busca información sobre medicamentos (soporta nombres en español e inglés)
-    - get_communes: Obtiene lista de comunas disponibles
+    - get_communes: SOLO para listar comunas cuando el usuario explícitamente pida "lista de comunas" o "qué comunas hay"
     - get_medication_categories: Lista categorías terapéuticas de medicamentos
 
     **REGLA CRÍTICA DE HERRAMIENTAS:**
     1. Si el usuario proporciona coordenadas (números como -33.0381, -71.3851), USA search_farmacias_nearby
-    2. Solo usa search_farmacias si NO hay coordenadas disponibles
-    3. Las coordenadas SIEMPRE tienen precedencia sobre nombres de comunas
+    2. Si el usuario pide farmacias en una comuna específica, USA DIRECTAMENTE search_farmacias - NO uses get_communes primero
+    3. NUNCA uses get_communes para verificar si existe una comuna - usa directamente search_farmacias
+    4. Solo usa get_communes si el usuario específicamente pide una lista de comunas disponibles
 
     **REGLAS DE SEGURIDAD MÉDICA (OBLIGATORIAS):**
     1. NUNCA diagnostiques condiciones médicas

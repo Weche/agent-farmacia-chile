@@ -213,8 +213,71 @@ class SmartCommuneMatcher:
             print(f"⚠️ Embedding match failed: {e}")
             return []
     
+    def extract_commune_from_query(self, query: str) -> List[str]:
+        """Extract potential commune names from contextual queries"""
+        import re
+        
+        query_lower = query.lower()
+        
+        # Common patterns that indicate location context
+        location_patterns = [
+            r'farmacias?\s+en\s+(.+?)(?:\s|$)',
+            r'(?:de\s+)?turno\s+en\s+(.+?)(?:\s|$)',
+            r'(?:en|de)\s+(.+?)(?:\s|$)',
+            r'cerca\s+(?:de|a)\s+(.+?)(?:\s|$)',
+            r'(.+?)\s+(?:farmacias?|turno|comuna)',
+        ]
+        
+        extracted_terms = []
+        
+        # Try each pattern
+        for pattern in location_patterns:
+            matches = re.findall(pattern, query_lower, re.IGNORECASE)
+            for match in matches:
+                # Clean the extracted term
+                cleaned = match.strip()
+                
+                # Smart filtering: keep "la" and "el" if they're part of official commune names
+                # Check if the term matches known commune patterns
+                cleaned_title = cleaned.title()  # Capitalize first letter of each word
+                
+                # Add both the cleaned version and the title case version
+                if cleaned:
+                    extracted_terms.append(cleaned)
+                    extracted_terms.append(cleaned_title)
+                    
+                    # Also try without common prepositions (but keep la/el for commune names)
+                    words = cleaned.split()
+                    if len(words) > 1:
+                        # Only remove truly unnecessary words, preserve "la" and "el" for communes
+                        filtered_words = []
+                        for i, word in enumerate(words):
+                            # Keep "la" and "el" if they're at the beginning and followed by a capitalized word
+                            if word in ['la', 'el'] and i == 0:
+                                filtered_words.append(word)
+                            elif word not in ['de', 'del', 'las', 'los', 'y', 'o', 'u', 'en', 'con', 'por', 'para']:
+                                filtered_words.append(word)
+                        
+                        if filtered_words and len(filtered_words) != len(words):
+                            filtered_text = ' '.join(filtered_words)
+                            extracted_terms.append(filtered_text)
+                            extracted_terms.append(filtered_text.title())
+        
+        # Also try the original query as is (without modification)
+        extracted_terms.append(query.strip())
+        
+        # Remove duplicates while preserving order
+        seen = set()
+        unique_terms = []
+        for term in extracted_terms:
+            if term not in seen and term:
+                seen.add(term)
+                unique_terms.append(term)
+        
+        return unique_terms
+
     def smart_match(self, query: str) -> MatchResult:
-        """Smart matching combining all strategies"""
+        """Smart matching combining all strategies with query preprocessing"""
         if not query or not query.strip():
             return MatchResult(
                 original_query=query,
@@ -228,55 +291,79 @@ class SmartCommuneMatcher:
         query = query.strip()
         normalized_query = self.normalize_text(query)
         
-        # Strategy 1: Exact match
-        exact_match = self.exact_match(query)
-        if exact_match:
-            return MatchResult(
-                original_query=query,
-                matched_commune=exact_match,
-                confidence=1.0,
-                method="exact",
-                suggestions=[],
-                normalized_query=normalized_query
-            )
+        # Extract potential commune names from the query
+        potential_communes = self.extract_commune_from_query(query)
         
-        # Strategy 2: High-confidence fuzzy match
-        fuzzy_matches = self.fuzzy_match(query, min_similarity=0.85)
-        if fuzzy_matches and fuzzy_matches[0][1] >= 0.9:
-            return MatchResult(
-                original_query=query,
-                matched_commune=fuzzy_matches[0][0],
-                confidence=fuzzy_matches[0][1],
-                method="fuzzy_high",
-                suggestions=[m[0] for m in fuzzy_matches[1:3]],
-                normalized_query=normalized_query
-            )
+        best_result = None
+        best_confidence = 0.0
         
-        # Strategy 3: Embedding match (if available)
-        embedding_matches = self.embedding_match(query)
-        if embedding_matches and embedding_matches[0][1] >= 0.8:
-            return MatchResult(
-                original_query=query,
-                matched_commune=embedding_matches[0][0],
-                confidence=embedding_matches[0][1],
-                method="embedding",
-                suggestions=[m[0] for m in embedding_matches[1:3]],
-                normalized_query=normalized_query
-            )
+        # Try matching each extracted term
+        for term in potential_communes:
+            if not term:
+                continue
+                
+            term_normalized = self.normalize_text(term)
+            term_normalized = self.normalize_text(term)
+            
+            # Strategy 1: Exact match
+            exact_match = self.exact_match(term)
+            if exact_match:
+                return MatchResult(
+                    original_query=query,
+                    matched_commune=exact_match,
+                    confidence=1.0,
+                    method="exact_extracted",
+                    suggestions=[],
+                    normalized_query=normalized_query
+                )
+            
+            # Strategy 2: High-confidence fuzzy match
+            fuzzy_matches = self.fuzzy_match(term, min_similarity=0.85)
+            if fuzzy_matches and fuzzy_matches[0][1] >= 0.9:
+                if fuzzy_matches[0][1] > best_confidence:
+                    best_result = MatchResult(
+                        original_query=query,
+                        matched_commune=fuzzy_matches[0][0],
+                        confidence=fuzzy_matches[0][1],
+                        method="fuzzy_high_extracted",
+                        suggestions=[m[0] for m in fuzzy_matches[1:3]],
+                        normalized_query=normalized_query
+                    )
+                    best_confidence = fuzzy_matches[0][1]
+            
+            # Strategy 3: Embedding match (if available)
+            embedding_matches = self.embedding_match(term)
+            if embedding_matches and embedding_matches[0][1] >= 0.8:
+                if embedding_matches[0][1] > best_confidence:
+                    best_result = MatchResult(
+                        original_query=query,
+                        matched_commune=embedding_matches[0][0],
+                        confidence=embedding_matches[0][1],
+                        method="embedding_extracted",
+                        suggestions=[m[0] for m in embedding_matches[1:3]],
+                        normalized_query=normalized_query
+                    )
+                    best_confidence = embedding_matches[0][1]
+            
+            # Strategy 4: Trigram match
+            trigram_matches = self.trigram_match(term)
+            if trigram_matches and trigram_matches[0][1] >= 0.6:
+                if trigram_matches[0][1] > best_confidence:
+                    best_result = MatchResult(
+                        original_query=query,
+                        matched_commune=trigram_matches[0][0],
+                        confidence=trigram_matches[0][1],
+                        method="trigram_extracted",
+                        suggestions=[m[0] for m in trigram_matches[1:4]],
+                        normalized_query=normalized_query
+                    )
+                    best_confidence = trigram_matches[0][1]
         
-        # Strategy 4: Trigram match
-        trigram_matches = self.trigram_match(query)
-        if trigram_matches and trigram_matches[0][1] >= 0.6:
-            return MatchResult(
-                original_query=query,
-                matched_commune=trigram_matches[0][0],
-                confidence=trigram_matches[0][1],
-                method="trigram",
-                suggestions=[m[0] for m in trigram_matches[1:4]],
-                normalized_query=normalized_query
-            )
-        
-        # Strategy 5: Low-confidence fuzzy match with suggestions
+        # Return best result if found
+        if best_result:
+            return best_result
+
+        # Strategy 5: Low-confidence fuzzy match with suggestions (using original query)
         all_fuzzy = self.fuzzy_match(query, min_similarity=0.3)
         if all_fuzzy:
             suggestions = [m[0] for m in all_fuzzy[:5]]
@@ -288,7 +375,7 @@ class SmartCommuneMatcher:
                 suggestions=suggestions,
                 normalized_query=normalized_query
             )
-        
+
         # No matches found
         return MatchResult(
             original_query=query,

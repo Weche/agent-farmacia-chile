@@ -21,7 +21,7 @@ try:
     if project_root not in sys.path:
         sys.path.append(project_root)
     
-    from enhanced_pharmacy_search import EnhancedPharmacyDatabase, SmartSearchResponse
+    from app.core.enhanced_pharmacy_search import EnhancedPharmacyDatabase, SmartSearchResponse
     SMART_MATCHING_AVAILABLE = True
     logger.info("✅ Smart commune matching available")
 except ImportError as e:
