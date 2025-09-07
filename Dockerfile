@@ -47,7 +47,8 @@ COPY .env.example ./
 # Create non-root user for security
 RUN useradd --create-home --shell /bin/bash app \
     && chown -R app:app /app
-USER app
+## Note: We keep running as root to ensure write access to mounted volume /app/data
+## If you prefer non-root, add an entrypoint that chowns the volume at runtime, then `su -s /bin/sh -c` to app user.
 
 # Health check endpoint
 HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
