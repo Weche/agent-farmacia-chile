@@ -19,7 +19,10 @@ from app.database import PharmacyDatabase
 class DataUpdateService:
     """Service to manage automatic database updates"""
     
-    def __init__(self, db_path: str = "pharmacy_finder.db", max_age_hours: int = None):
+    def __init__(self, db_path: str = None, max_age_hours: int = None):
+        # Prefer env path (e.g., Fly volume); fallback to local file
+        if db_path is None:
+            db_path = os.getenv('DATABASE_URL', 'pharmacy_finder.db')
         self.db_path = db_path
         # Get max age from environment or use default
         if max_age_hours is None:

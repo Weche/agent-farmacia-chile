@@ -15,48 +15,52 @@ router = APIRouter()
 def get_database_status():
     """Get database health and statistics"""
     try:
-        conn = sqlite3.connect('pharmacy_finder.db')
+        # Use env-configured DB path (supports Fly volume mount)
+        db_path_str = os.getenv('DATABASE_URL', 'pharmacy_finder.db')
+        conn = sqlite3.connect(db_path_str)
         cursor = conn.cursor()
-        
+
         # Get table info
         cursor.execute("SELECT name FROM sqlite_master WHERE type='table';")
         tables = [row[0] for row in cursor.fetchall()]
-        
+
         # Get pharmacy statistics
         cursor.execute("SELECT COUNT(*) FROM pharmacies")
         total_pharmacies = cursor.fetchone()[0]
-        
+
         cursor.execute("SELECT COUNT(DISTINCT comuna) FROM pharmacies")
         total_communes = cursor.fetchone()[0]
-        
+
         cursor.execute("SELECT COUNT(DISTINCT region) FROM pharmacies")
         total_regions = cursor.fetchone()[0]
-        
+
         # Get pharmacies with coordinates
         cursor.execute("SELECT COUNT(*) FROM pharmacies WHERE lat != 0 AND lng != 0")
         pharmacies_with_coords = cursor.fetchone()[0]
-        
+
         # Get turno pharmacies
         cursor.execute("SELECT COUNT(*) FROM pharmacies WHERE es_turno = 1")
         turno_pharmacies = cursor.fetchone()[0]
-        
+
         # Get database file info
-        db_path = Path('pharmacy_finder.db')
+        db_path = Path(db_path_str)
         db_size = db_path.stat().st_size if db_path.exists() else 0
         db_modified = datetime.fromtimestamp(db_path.stat().st_mtime) if db_path.exists() else None
-        
+
         # Sample pharmacies by commune
-        cursor.execute("""
-            SELECT comuna, COUNT(*) as count 
-            FROM pharmacies 
-            GROUP BY comuna 
-            ORDER BY count DESC 
+        cursor.execute(
+            """
+            SELECT comuna, COUNT(*) as count
+            FROM pharmacies
+            GROUP BY comuna
+            ORDER BY count DESC
             LIMIT 10
-        """)
+            """
+        )
         top_communes = cursor.fetchall()
-        
+
         conn.close()
-        
+
         return {
             "status": "healthy",
             "tables": tables,
@@ -66,20 +70,17 @@ def get_database_status():
                 "total_regions": total_regions,
                 "pharmacies_with_coordinates": pharmacies_with_coords,
                 "turno_pharmacies": turno_pharmacies,
-                "coordinate_coverage": round((pharmacies_with_coords / total_pharmacies) * 100, 2) if total_pharmacies > 0 else 0
+                "coordinate_coverage": round((pharmacies_with_coords / total_pharmacies) * 100, 2) if total_pharmacies > 0 else 0,
             },
             "file_info": {
                 "size_mb": round(db_size / (1024 * 1024), 2),
-                "last_modified": db_modified.isoformat() if db_modified else None
+                "last_modified": db_modified.isoformat() if db_modified else None,
             },
-            "top_communes": [{"name": commune, "count": count} for commune, count in top_communes]
+            "top_communes": [{"name": commune, "count": count} for commune, count in top_communes],
         }
-        
+
     except Exception as e:
-        return {
-            "status": "error",
-            "error": str(e)
-        }
+        return {"status": "error", "error": str(e)}
 
 def get_redis_status():
     """Get Redis health and statistics"""
