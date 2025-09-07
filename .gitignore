@@ -178,6 +178,7 @@ cython_debug/
 # Data files (if you want to exclude large datasets)
 data/*.csv
 data/*.json
+!data/pharmacy_backup.json
 data/*.xlsx
 data/*.parquet
 
