@@ -815,6 +815,261 @@ export class PharmacyFinder {
     getMap() {
         return this.map;
     }
+    
+    // **UPDATE MAP WITH USER LOCATION AND SEARCH NEARBY PHARMACIES**
+    async updateMapWithUserLocation(latitude, longitude) {
+        console.log('🗺️ Updating map with user location:', latitude, longitude);
+        
+        // Store user location
+        this.userLocation = { lat: latitude, lng: longitude };
+        
+        // Remove existing user marker if any
+        if (this.userMarker) {
+            this.map.removeLayer(this.userMarker);
+        }
+        
+        // Create custom user location icon (blue with white center)
+        const userLocationIcon = L.icon({
+            iconUrl: 'data:image/svg+xml;base64,' + btoa(`
+                <svg width="32" height="32" viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg">
+                    <circle cx="16" cy="16" r="15" fill="#4285f4" stroke="white" stroke-width="3"/>
+                    <circle cx="16" cy="16" r="8" fill="white"/>
+                    <circle cx="16" cy="16" r="4" fill="#4285f4"/>
+                </svg>
+            `),
+            iconSize: [32, 32],
+            iconAnchor: [16, 16],
+            popupAnchor: [0, -16]
+        });
+        
+        // Add new user marker
+        this.userMarker = L.marker([latitude, longitude], {
+            icon: userLocationIcon
+        })
+        .addTo(this.map)
+        .bindPopup('📍 Tu ubicación actual')
+        .openPopup();
+        
+        // Center map on user location with appropriate zoom
+        this.map.setView([latitude, longitude], 14);
+        
+        // Search for nearby pharmacies and update map
+        try {
+            await this.searchNearbyPharmacies(latitude, longitude);
+            console.log('✅ Map updated with user location and nearby pharmacies');
+        } catch (error) {
+            console.error('❌ Error searching nearby pharmacies:', error);
+        }
+    }
+    
+    // **SHOW PHARMACIES ON MAP**
+    showPharmaciesOnMap(pharmacies, userLocation = null) {
+        console.log('🗺️ Showing pharmacies on map:', pharmacies.length, 'pharmacies');
+        console.log('📍 User location provided:', userLocation);
+        
+        // Clear existing pharmacy markers
+        this.clearPharmacyMarkers();
+        
+        // Store pharmacies for other methods to use
+        this.pharmacies = pharmacies;
+        
+        const bounds = [];
+        
+        // Add user location marker and to bounds if provided
+        if (userLocation && userLocation.latitud && userLocation.longitud) {
+            const userLat = parseFloat(userLocation.latitud);
+            const userLng = parseFloat(userLocation.longitud);
+            
+            if (!isNaN(userLat) && !isNaN(userLng)) {
+                console.log('📍 Adding user location to map:', userLat, userLng);
+                
+                // Add user location to bounds
+                bounds.push([userLat, userLng]);
+                
+                // Update map with user location (adds blue marker)
+                this.updateMapWithUserLocation(userLat, userLng);
+            }
+        }
+        
+        // Add pharmacy markers
+        pharmacies.forEach((pharmacy, index) => {
+            // Get coordinates - handle different possible structures
+            let lat, lng;
+            
+            if (pharmacy.coordenadas) {
+                lat = pharmacy.coordenadas.latitud || pharmacy.coordenadas.lat;
+                lng = pharmacy.coordenadas.longitud || pharmacy.coordenadas.lng;
+            } else if (pharmacy.latitud && pharmacy.longitud) {
+                lat = pharmacy.latitud;
+                lng = pharmacy.longitud;
+            } else if (pharmacy.lat && pharmacy.lng) {
+                lat = pharmacy.lat;
+                lng = pharmacy.lng;
+            }
+            
+            if (lat && lng) {
+                const parsedLat = parseFloat(lat);
+                const parsedLng = parseFloat(lng);
+                
+                if (!isNaN(parsedLat) && !isNaN(parsedLng)) {
+                    // Add pharmacy to bounds
+                    bounds.push([parsedLat, parsedLng]);
+                    
+                    // Determine if pharmacy is open
+                    const isOpen = pharmacy.abierta || pharmacy.turno;
+                    
+                    // Create pharmacy marker with appropriate icon
+                    const pharmacyIcon = L.icon({
+                        iconUrl: 'data:image/svg+xml;base64,' + btoa(`
+                            <svg width="32" height="32" viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg">
+                                <circle cx="16" cy="16" r="15" fill="${isOpen ? '#28a745' : '#dc3545'}" stroke="white" stroke-width="2"/>
+                                <rect x="13" y="8" width="6" height="16" fill="white"/>
+                                <rect x="8" y="13" width="16" height="6" fill="white"/>
+                            </svg>
+                        `),
+                        iconSize: [32, 32],
+                        iconAnchor: [16, 32],
+                        popupAnchor: [0, -32]
+                    });
+                    
+                    // Create popup content
+                    const popupContent = `
+                        <div style="min-width: 200px;">
+                            <h4 style="margin: 0 0 8px 0; color: #2c3e50;">${pharmacy.nombre || 'Farmacia'}</h4>
+                            <p style="margin: 4px 0; font-size: 12px; color: ${isOpen ? '#28a745' : '#dc3545'};">
+                                ${isOpen ? '🟢 Abierta' : '🔴 Cerrada'}
+                            </p>
+                            <p style="margin: 4px 0; font-size: 12px;">📍 ${pharmacy.direccion || 'Dirección no disponible'}</p>
+                            ${pharmacy.telefono ? `<p style="margin: 4px 0; font-size: 12px;">📞 ${pharmacy.telefono}</p>` : ''}
+                            <button onclick="app.focusPharmacyOnMap(${index})" style="margin-top: 8px; padding: 4px 8px; background: #667eea; color: white; border: none; border-radius: 4px; cursor: pointer;">
+                                Ver detalles
+                            </button>
+                        </div>
+                    `;
+                    
+                    // Add marker to map
+                    const marker = L.marker([parsedLat, parsedLng], { 
+                        icon: pharmacyIcon,
+                        pharmacy: pharmacy  // Store pharmacy reference
+                    })
+                        .addTo(this.map)
+                        .bindPopup(popupContent);
+                    
+                    // Store marker reference
+                    this.markers.push(marker);
+                }
+            }
+        });
+        
+        // Fit map to show all markers if we have any bounds
+        if (bounds.length > 0) {
+            console.log('🗺️ Fitting map to bounds with', bounds.length, 'points');
+            this.map.fitBounds(bounds, { 
+                padding: [20, 20],
+                maxZoom: 15  // Don't zoom in too close
+            });
+        }
+        
+        console.log('✅ Added', this.markers.length, 'pharmacy markers to map');
+    }
+    
+    // **CLEAR PHARMACY MARKERS**
+    clearPharmacyMarkers() {
+        this.markers.forEach(marker => {
+            this.map.removeLayer(marker);
+        });
+        this.markers = [];
+    }
+
+    focusPharmacyOnMap(pharmacyIndex) {
+        if (!this.pharmacies || this.pharmacies.length === 0) {
+            console.error('No pharmacy data available');
+            return;
+        }
+
+        const pharmacy = this.pharmacies[pharmacyIndex];
+        if (!pharmacy) {
+            console.error('Invalid pharmacy index:', pharmacyIndex);
+            return;
+        }
+
+        if (!pharmacy.lat || !pharmacy.lng) {
+            console.error('Invalid pharmacy data for map focus');
+            return;
+        }
+
+        const lat = parseFloat(pharmacy.lat);
+        const lng = parseFloat(pharmacy.lng);
+
+        if (isNaN(lat) || isNaN(lng)) {
+            console.error('Invalid coordinates for pharmacy:', pharmacy);
+            return;
+        }
+
+        // Center map on pharmacy location
+        this.map.setView([lat, lng], 16);
+
+        // Find and highlight the pharmacy marker
+        this.markers.forEach(marker => {
+            const markerPharmacy = marker.options.pharmacy;
+            if (markerPharmacy && (markerPharmacy.id === pharmacy.id || 
+                (markerPharmacy.lat === pharmacy.lat && markerPharmacy.lng === pharmacy.lng))) {
+                // Open popup for this pharmacy
+                marker.openPopup();
+                
+                // Add highlighting effect
+                const markerElement = marker.getElement();
+                if (markerElement) {
+                    markerElement.style.filter = 'brightness(1.5) drop-shadow(0 0 10px #007bff)';
+                    setTimeout(() => {
+                        markerElement.style.filter = '';
+                    }, 3000);
+                }
+            }
+        });
+    }
+
+    askAboutPharmacy(pharmacyIndex) {
+        if (!this.pharmacies || this.pharmacies.length === 0) {
+            console.error('No pharmacy data available');
+            return;
+        }
+
+        const pharmacy = this.pharmacies[pharmacyIndex];
+        if (!pharmacy) {
+            console.error('Invalid pharmacy index:', pharmacyIndex);
+            return;
+        }
+
+        const question = `Cuéntame más sobre la farmacia ${pharmacy.nombre || 'esta farmacia'}`;
+        
+        // Get chat interface elements
+        const chatInput = document.getElementById('userInput');
+        const sendButton = document.getElementById('sendButton');
+
+        if (chatInput && sendButton) {
+            // Set the question in the input
+            chatInput.value = question;
+            
+            // Trigger the send action
+            sendButton.click();
+            
+            // Focus on chat input for user interaction
+            chatInput.focus();
+            
+            // Scroll to chat section
+            const chatSection = document.getElementById('chat-section');
+            if (chatSection) {
+                chatSection.scrollIntoView({ behavior: 'smooth' });
+            }
+        } else {
+            console.error('Chat interface elements not found');
+            // Fallback: try to call sendMessage directly if available
+            if (window.sendMessage) {
+                window.sendMessage(question);
+            }
+        }
+    }
 }
 
 // Make PharmacyFinder available globally for backward compatibility

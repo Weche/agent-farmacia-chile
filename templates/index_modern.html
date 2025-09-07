@@ -297,6 +297,28 @@
         </div>
     </header>
 
+    <!-- Header Stats Bar -->
+    <section class="header-stats-section">
+        <div class="stats-grid">
+            <div class="stat-card fade-in stagger-1">
+                <div class="stat-number" id="total-pharmacies">0</div>
+                <div class="stat-label">Total Farmacias</div>
+            </div>
+            <div class="stat-card fade-in stagger-2">
+                <div class="stat-number" id="open-pharmacies">0</div>
+                <div class="stat-label">De Turno</div>
+            </div>
+            <div class="stat-card fade-in stagger-3">
+                <div class="stat-number" id="communes-count">0</div>
+                <div class="stat-label">Comunas</div>
+            </div>
+            <div class="stat-card fade-in stagger-4">
+                <div class="stat-time" id="current-time">--:--:--</div>
+                <div class="stat-label">Hora Actual</div>
+            </div>
+        </div>
+    </section>
+
     <!-- Hero Section = Main Chat Interface -->
     <section class="hero-section">
         <div class="hero-main-interface">
@@ -371,28 +393,6 @@
 
     <!-- Main Content -->
     <main class="main-content">
-        <!-- Statistics Section -->
-        <section class="stats-section">
-            <div class="stats-grid">
-                <div class="stat-card fade-in stagger-1">
-                    <div class="stat-number" id="total-pharmacies">0</div>
-                    <div class="stat-label">Total Farmacias</div>
-                </div>
-                <div class="stat-card fade-in stagger-2">
-                    <div class="stat-number" id="open-pharmacies">0</div>
-                    <div class="stat-label">De Turno</div>
-                </div>
-                <div class="stat-card fade-in stagger-3">
-                    <div class="stat-number" id="communes-count">0</div>
-                    <div class="stat-label">Comunas</div>
-                </div>
-                <div class="stat-card fade-in stagger-4">
-                    <div class="stat-time" id="current-time">--:--:--</div>
-                    <div class="stat-label">Hora Actual</div>
-                </div>
-            </div>
-        </section>
-
         <!-- Search Controls -->
         <section class="search-controls">
             <div class="search-controls-grid">
@@ -646,6 +646,20 @@
             }
             
             showPharmaciesOnMap(pharmacies, userLocation = null) {
+                console.log('🏥 HTML: Showing pharmacies on map:', pharmacies);
+                
+                // **DELEGATE TO PHARMACY FINDER INSTANCE**
+                if (this.pharmacyFinder && this.pharmacyFinder.showPharmaciesOnMap) {
+                    console.log('✅ Using PharmacyFinder.showPharmaciesOnMap method');
+                    this.pharmacyFinder.showPharmaciesOnMap(pharmacies, userLocation);
+                } else {
+                    console.warn('❌ PharmacyFinder not available, using fallback');
+                    // Fallback to existing implementation if needed
+                    this.showPharmaciesOnMapFallback(pharmacies, userLocation);
+                }
+            }
+            
+            showPharmaciesOnMapFallback(pharmacies, userLocation = null) {
                 console.log('🏥 Showing pharmacies on map:', pharmacies);
                 
                 if (!this.mainMap || !this.pharmacyMarkersGroup) {
@@ -866,6 +880,11 @@
                                 console.log('🗺️ About to show pharmacies on maps...');
                                 this.showPharmaciesOnMap(pharmacyData, userLocation);
                                 this.showPharmaciesOnMapPreview(pharmacyData, userLocation);
+                                
+                                // **RESTORED: Display pharmacy cards**
+                                console.log('🏥 About to display pharmacy cards...');
+                                this.displayPharmacyCards(pharmacyData, userLocation);
+                                
                                 return; // Exit after first match
                             } else {
                                 console.log('❌ Tool succeeded but no pharmacy data found in any structure');
@@ -884,6 +903,7 @@
                     console.log('🏥 Found direct pharmacy data:', responseData.farmacias);
                     this.showPharmaciesOnMap(responseData.farmacias);
                     this.showPharmaciesOnMapPreview(responseData.farmacias);
+                    this.displayPharmacyCards(responseData.farmacias);
                 } else {
                     console.log('❌ No direct pharmacy data either');
                 }
@@ -1172,6 +1192,12 @@
                         const { latitude, longitude } = position.coords;
                         console.log('📍 Location obtained:', latitude, longitude);
                         
+                        // **UPDATE MAIN HERO MAP WITH USER LOCATION**
+                        if (window.app && window.app.updateMapWithUserLocation) {
+                            console.log('🗺️ Updating main hero map with user location');
+                            window.app.updateMapWithUserLocation(latitude, longitude);
+                        }
+                        
                         // Update the map preview with new location
                         if (this.mapPreview) {
                             this.mapPreview.setView([latitude, longitude], 14);
@@ -1230,6 +1256,158 @@
                 );
             }
             
+            // **RESTORED: Display pharmacy cards in the results section**
+            displayPharmacyCards(pharmacies, userLocation = null) {
+                console.log('🏥 displayPharmacyCards called with:', pharmacies?.length, 'pharmacies');
+                
+                if (!pharmacies || pharmacies.length === 0) {
+                    console.log('❌ No pharmacies to display');
+                    return;
+                }
+                
+                // Use the PharmacyFinder's displayPharmacyCards method if available
+                if (window.app && window.app.displayPharmacyCards) {
+                    console.log('✅ Using PharmacyFinder.displayPharmacyCards method');
+                    window.app.displayPharmacyCards(pharmacies, userLocation);
+                    return;
+                }
+                
+                // Fallback implementation
+                console.log('⚠️ Using fallback displayPharmacyCards method');
+                const pharmacyResults = document.getElementById('pharmacyResults');
+                if (!pharmacyResults) {
+                    console.log('❌ No pharmacy results container found');
+                    return;
+                }
+                
+                // Clear existing results
+                pharmacyResults.innerHTML = '';
+                
+                // Create pharmacy cards HTML
+                let cardsHTML = '<div class="pharmacy-grid">';
+                
+                pharmacies.forEach((pharmacy, index) => {
+                    const isOpen = pharmacy.abierta || pharmacy.turno;
+                    const statusClass = isOpen ? 'open' : 'closed';
+                    
+                    // Handle different address formats
+                    let direccion = '';
+                    if (typeof pharmacy.direccion === 'string') {
+                        direccion = pharmacy.direccion;
+                    } else if (pharmacy.direccion && pharmacy.direccion.calle) {
+                        direccion = `${pharmacy.direccion.calle} ${pharmacy.direccion.numero || ''}`.trim();
+                    } else {
+                        direccion = 'Dirección no disponible';
+                    }
+                    
+                    const comuna = pharmacy.comuna && typeof pharmacy.comuna === 'string' ? pharmacy.comuna : '';
+                    
+                    // Handle phone numbers
+                    let telefono = '';
+                    if (pharmacy.contacto && pharmacy.contacto.telefono) {
+                        telefono = pharmacy.contacto.telefono;
+                    } else if (pharmacy.telefono) {
+                        telefono = pharmacy.telefono;
+                    }
+                    
+                    // Handle schedule
+                    let horario = '';
+                    if (typeof pharmacy.horario === 'string') {
+                        horario = pharmacy.horario;
+                    } else if (pharmacy.horario && pharmacy.horario.display) {
+                        horario = pharmacy.horario.display;
+                    }
+                    
+                    // Calculate distance if user location is provided
+                    let distance = '';
+                    if (userLocation && pharmacy.latitud && pharmacy.longitud) {
+                        const dist = this.calculateDistance(
+                            userLocation.latitud, userLocation.longitud,
+                            pharmacy.latitud, pharmacy.longitud
+                        );
+                        distance = `${dist.toFixed(1)} km`;
+                    }
+                    
+                    cardsHTML += `
+                        <div class="pharmacy-card" data-pharmacy-id="${index}">
+                            <div class="pharmacy-card-header">
+                                <div class="pharmacy-status ${statusClass}"></div>
+                                ${distance ? `<div class="pharmacy-distance">${distance}</div>` : ''}
+                            </div>
+                            
+                            <h3 class="pharmacy-name">${pharmacy.nombre || 'Farmacia'}</h3>
+                            
+                            <div class="pharmacy-details">
+                                <div class="pharmacy-address">
+                                    📍 ${direccion}${comuna ? `, ${comuna}` : ''}
+                                </div>
+                                
+                                ${telefono ? `
+                                    <div class="pharmacy-phone">
+                                        📞 <a href="tel:${telefono}">${telefono}</a>
+                                    </div>
+                                ` : ''}
+                                
+                                ${horario ? `
+                                    <div class="pharmacy-hours">
+                                        🕐 ${horario}
+                                    </div>
+                                ` : ''}
+                                
+                                ${pharmacy.turno ? `
+                                    <div class="pharmacy-duty">
+                                        🌙 Farmacia de turno
+                                    </div>
+                                ` : ''}
+                                
+                                ${pharmacy.cadena && pharmacy.cadena !== 'Independiente' ? `
+                                    <div class="pharmacy-chain">
+                                        🏢 ${pharmacy.cadena}
+                                    </div>
+                                ` : ''}
+                            </div>
+                            
+                            <div class="pharmacy-actions">
+                                <button class="btn btn-primary btn-sm" onclick="app.focusPharmacyOnMap?.(${index})">
+                                    🗺️ Ver en mapa
+                                </button>
+                                ${telefono ? `
+                                    <button class="btn btn-success btn-sm" onclick="window.open('tel:${telefono}')">
+                                        📞 Llamar
+                                    </button>
+                                ` : ''}
+                                <button class="btn btn-info btn-sm" onclick="app.askAboutPharmacy?.(${index})">
+                                    ❓ Pregunta por esta farmacia
+                                </button>
+                            </div>
+                        </div>
+                    `;
+                });
+                
+                cardsHTML += '</div>';
+                pharmacyResults.innerHTML = cardsHTML;
+                
+                // Show the results section
+                const resultsSection = document.getElementById('results');
+                if (resultsSection) {
+                    resultsSection.style.display = 'block';
+                }
+                
+                console.log(`✅ Displayed ${pharmacies.length} pharmacy cards`);
+            }
+            
+            // Helper function to calculate distance between two coordinates
+            calculateDistance(lat1, lon1, lat2, lon2) {
+                const R = 6371; // Earth's radius in kilometers
+                const dLat = (lat2 - lat1) * Math.PI / 180;
+                const dLon = (lon2 - lon1) * Math.PI / 180;
+                const a = Math.sin(dLat/2) * Math.sin(dLat/2) +
+                        Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+                        Math.sin(dLon/2) * Math.sin(dLon/2);
+                const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+                return R * c;
+            }
+            
             handleQuickAction(action) {
                 switch(action) {
                     case 'open-now':
@@ -1243,6 +1421,34 @@
                     case 'nearest':
                         this.useCurrentLocation();
                         break;
+                }
+            }
+            
+            // **DELEGATION METHODS FOR PHARMACY FINDER**
+            focusPharmacyOnMap(pharmacyIndex) {
+                if (this.pharmacyFinder && this.pharmacyFinder.focusPharmacyOnMap) {
+                    console.log('🔍 Delegating focusPharmacyOnMap to PharmacyFinder');
+                    this.pharmacyFinder.focusPharmacyOnMap(pharmacyIndex);
+                } else {
+                    console.error('❌ PharmacyFinder.focusPharmacyOnMap not available');
+                }
+            }
+            
+            askAboutPharmacy(pharmacyIndex) {
+                if (this.pharmacyFinder && this.pharmacyFinder.askAboutPharmacy) {
+                    console.log('💬 Delegating askAboutPharmacy to PharmacyFinder');
+                    this.pharmacyFinder.askAboutPharmacy(pharmacyIndex);
+                } else {
+                    console.error('❌ PharmacyFinder.askAboutPharmacy not available');
+                }
+            }
+            
+            updateMapWithUserLocation(latitude, longitude) {
+                if (this.pharmacyFinder && this.pharmacyFinder.updateMapWithUserLocation) {
+                    console.log('📍 Delegating updateMapWithUserLocation to PharmacyFinder');
+                    this.pharmacyFinder.updateMapWithUserLocation(latitude, longitude);
+                } else {
+                    console.error('❌ PharmacyFinder.updateMapWithUserLocation not available');
                 }
             }
         }

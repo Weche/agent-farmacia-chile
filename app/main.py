@@ -863,7 +863,7 @@ async def test_links():
     """Endpoint temporal para probar enlaces clickeables directamente"""
     from fastapi.responses import HTMLResponse
     
-    test_html = """
+    test_html = r"""
     <!DOCTYPE html>
     <html>
     <head>
@@ -942,15 +942,15 @@ if (window.chatManager && window.chatManager.formatAIResponse) {
                     .replace(/&/g, '&amp;')
                     .replace(/</g, '&lt;')
                     .replace(/>/g, '&gt;');
-                formatted = formatted.replace(/\n/g, '<br>');
-                formatted = formatted.replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" target="_blank" class="pharmacy-link">$1</a>');
-                formatted = formatted.replace(/\b(tel:\+\d+[0-9\-\s]*)/g, '<a href="$1" class="phone-link">📞 Llamar</a>');
-                formatted = formatted.replace(/🌐\s*<a([^>]*href[^>]*maps[^>]*)>([^<]*)<\/a>/gi, '<span class="map-link">🗺️ <a$1><strong>$2</strong></a></span>');
-                formatted = formatted.replace(/🏪\s*([^📍\n<]+)/g, '<div class="pharmacy-name">🏪 <strong>$1</strong></div>');
-                formatted = formatted.replace(/📍\s*([^<\n⏰📞🌐]+)/g, '<div class="pharmacy-address">📍 <em>$1</em></div>');
-                formatted = formatted.replace(/📞\s*([^<\n⏰📍🌐]+)/g, '<div class="pharmacy-phone">📞 $1</div>');
-                formatted = formatted.replace(/⏰\s*([^<\n📍📞🌐]+)/g, '<div class="pharmacy-hours">⏰ $1</div>');
-                formatted = formatted.replace(/�([^<\n]*)/g, '<span class="emergency-indicator">�$1</span>');
+                formatted = formatted.replace(/\\n/g, '<br>');
+                formatted = formatted.replace(/\\[([^\\]]+)\\]\\(([^)]+)\\)/g, '<a href="$2" target="_blank" class="pharmacy-link">$1</a>');
+                formatted = formatted.replace(/\\b(tel:\\+\\d+[0-9\\-\\s]*)/g, '<a href="$1" class="phone-link">📞 Llamar</a>');
+                formatted = formatted.replace(/🌐\\s*<a([^>]*href[^>]*maps[^>]*)>([^<]*)<\\/a>/gi, '<span class="map-link">🗺️ <a$1><strong>$2</strong></a></span>');
+                formatted = formatted.replace(/🏪\\s*([^📍\\n<]+)/g, '<div class="pharmacy-name">🏪 <strong>$1</strong></div>');
+                formatted = formatted.replace(/📍\\s*([^<\\n⏰📞🌐]+)/g, '<div class="pharmacy-address">📍 <em>$1</em></div>');
+                formatted = formatted.replace(/📞\\s*([^<\\n⏰📍🌐]+)/g, '<div class="pharmacy-phone">📞 $1</div>');
+                formatted = formatted.replace(/⏰\\s*([^<\\n📍📞🌐]+)/g, '<div class="pharmacy-hours">⏰ $1</div>');
+                formatted = formatted.replace(/�([^<\\n]*)/g, '<span class="emergency-indicator">�$1</span>');
                 return formatted;
             }
 
@@ -1061,3 +1061,122 @@ async def simple_chat_test(request: ChatPayload):
 🌐 [Ver en Google Maps](https://maps.google.com/maps?q=-33.482677,-70.747523)"""
     
     return {"message": test_response}
+
+@app.get("/vademecum-explorer")
+async def vademecum_explorer():
+    """Interactive table to explore vademecum data"""
+    from fastapi.responses import HTMLResponse
+    
+    html_content = """
+    <!DOCTYPE html>
+    <html lang="es">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>📊 Explorador de Vademécum</title>
+        <style>
+            body { font-family: Arial, sans-serif; margin: 0; padding: 20px; background-color: #f5f5f5; }
+            .header { text-align: center; margin-bottom: 30px; padding: 20px; background: white; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+            .controls { display: flex; gap: 10px; margin-bottom: 20px; flex-wrap: wrap; align-items: center; }
+            .search-box { padding: 8px 12px; border: 1px solid #ddd; border-radius: 4px; min-width: 200px; }
+            .btn { padding: 8px 16px; border: none; border-radius: 4px; cursor: pointer; font-weight: 500; }
+            .btn-primary { background: #007bff; color: white; }
+            .btn:hover { opacity: 0.8; }
+            .table-container { background: white; border-radius: 8px; overflow: hidden; box-shadow: 0 2px 4px rgba(0,0,0,0.1); overflow-x: auto; }
+            table { width: 100%; border-collapse: collapse; min-width: 800px; }
+            th { background: #f8f9fa; padding: 12px 8px; text-align: left; font-weight: 600; border-bottom: 2px solid #dee2e6; cursor: pointer; white-space: nowrap; }
+            th:hover { background: #e9ecef; }
+            td { padding: 10px 8px; border-bottom: 1px solid #dee2e6; max-width: 200px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+            tr:nth-child(even) { background: #f8f9fa; }
+            tr:hover { background: #e3f2fd !important; }
+            .loading { text-align: center; padding: 40px; color: #666; }
+            .status { margin: 10px 0; padding: 10px; border-radius: 4px; background: #f8f9fa; border-left: 4px solid #007bff; }
+        </style>
+    </head>
+    <body>
+        <div class="header">
+            <h1>📊 Explorador de Vademécum</h1>
+            <p>Base de datos de medicamentos</p>
+        </div>
+        
+        <div class="controls">
+            <input type="text" class="search-box" id="searchBox" placeholder="Buscar medicamentos (mín 2 caracteres)...">
+            <button class="btn btn-primary" onclick="searchMedicines()">🔍 Buscar</button>
+        </div>
+        
+        <div class="status" id="status">
+            Escribe al menos 2 caracteres para buscar medicamentos...
+        </div>
+        
+        <div class="table-container">
+            <div class="loading" id="loading" style="display: none;">Cargando datos...</div>
+            <table id="dataTable" style="display: none;">
+                <thead id="tableHead"></thead>
+                <tbody id="tableBody"></tbody>
+            </table>
+        </div>
+        
+        <script>
+            async function searchMedicines() {
+                const searchTerm = document.getElementById('searchBox').value.trim();
+                
+                if (searchTerm.length < 2) {
+                    document.getElementById('status').innerHTML = 'Escribe al menos 2 caracteres para buscar.';
+                    return;
+                }
+                
+                try {
+                    document.getElementById('loading').style.display = 'block';
+                    document.getElementById('dataTable').style.display = 'none';
+                    document.getElementById('status').innerHTML = 'Buscando...';
+                    
+                    const response = await fetch(`/medicamentos?q=${encodeURIComponent(searchTerm)}&limit=50`);
+                    const data = await response.json();
+                    
+                    if (data.items && data.items.length > 0) {
+                        displayData(data.items);
+                        document.getElementById('status').innerHTML = `Encontrados ${data.items.length} medicamentos`;
+                    } else {
+                        document.getElementById('status').innerHTML = 'No se encontraron medicamentos.';
+                        document.getElementById('dataTable').style.display = 'none';
+                    }
+                } catch (error) {
+                    console.error('Error:', error);
+                    document.getElementById('status').innerHTML = 'Error al buscar: ' + error.message;
+                } finally {
+                    document.getElementById('loading').style.display = 'none';
+                }
+            }
+            
+            function displayData(items) {
+                if (items.length === 0) return;
+                
+                const headers = Object.keys(items[0]);
+                const tableHead = document.getElementById('tableHead');
+                tableHead.innerHTML = '<tr>' + headers.map(h => `<th>${h}</th>`).join('') + '</tr>';
+                
+                const tableBody = document.getElementById('tableBody');
+                tableBody.innerHTML = items.map(row => 
+                    '<tr>' + 
+                    headers.map(header => {
+                        const cellValue = row[header] || '';
+                        const displayValue = cellValue.toString().length > 50 ? 
+                            cellValue.toString().substring(0, 50) + '...' : 
+                            cellValue;
+                        return `<td title="${cellValue}">${displayValue}</td>`;
+                    }).join('') + 
+                    '</tr>'
+                ).join('');
+                
+                document.getElementById('dataTable').style.display = 'table';
+            }
+            
+            document.getElementById('searchBox').addEventListener('keypress', function(e) {
+                if (e.key === 'Enter') searchMedicines();
+            });
+        </script>
+    </body>
+    </html>
+    """
+    
+    return HTMLResponse(content=html_content)

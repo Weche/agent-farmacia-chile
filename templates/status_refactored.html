@@ -13,7 +13,7 @@
 
         body {
             font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
-            background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             min-height: 100vh;
             padding: 20px;
         }
@@ -60,12 +60,10 @@
         }
 
         .login-form {
-            background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
-            padding: 24px;
-            border-radius: 12px;
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 8px;
             margin: 15px 0;
-            border: 1px solid #dee2e6;
-            box-shadow: inset 0 2px 8px rgba(0, 0, 0, 0.05);
         }
 
         .login-form.hidden {
@@ -116,22 +114,21 @@
 
         .status-card {
             background: white;
-            border-radius: 16px;
-            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+            border-radius: 12px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
             overflow: hidden;
-            transition: all 0.3s ease;
-            border: 1px solid rgba(255, 255, 255, 0.2);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
         }
 
         .status-card:hover {
-            transform: translateY(-4px);
-            box-shadow: 0 12px 48px rgba(0, 0, 0, 0.15);
+            transform: translateY(-2px);
+            box-shadow: 0 8px 30px rgba(0, 0, 0, 0.15);
         }
 
         .card-header {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
             color: white;
-            padding: 24px;
+            padding: 20px;
             display: flex;
             justify-content: space-between;
             align-items: center;
@@ -210,24 +207,23 @@
 
         /* Buttons */
         .action-btn {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background: #2196F3;
             color: white;
             border: none;
-            padding: 14px 24px;
-            border-radius: 8px;
+            padding: 12px 20px;
+            border-radius: 6px;
             cursor: pointer;
-            font-size: 0.95em;
-            font-weight: 600;
+            font-size: 0.9em;
+            font-weight: 500;
             margin: 5px;
             transition: all 0.3s ease;
             text-decoration: none;
             display: inline-block;
-            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
         }
 
         .action-btn:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
+            background: #1976D2;
+            transform: translateY(-1px);
         }
 
         .action-btn.primary {
@@ -356,29 +352,6 @@
         /* Hidden utility */
         .hidden {
             display: none !important;
-        }
-
-        /* Animations for messages */
-        @keyframes slideInRight {
-            from {
-                transform: translateX(100%);
-                opacity: 0;
-            }
-            to {
-                transform: translateX(0);
-                opacity: 1;
-            }
-        }
-
-        @keyframes slideOutRight {
-            from {
-                transform: translateX(0);
-                opacity: 1;
-            }
-            to {
-                transform: translateX(100%);
-                opacity: 0;
-            }
         }
     </style>
 </head>
@@ -603,7 +576,7 @@
                     }
 
                     setAuthState('userpass', userInput, passInput, null);
-                    queryParams = `username=${encodeURIComponent(userInput)}&password=${encodeURIComponent(passInput)}`;
+                    queryParams = `username=${encodeURIComponent(userInput)}&admin_key=${encodeURIComponent(passInput)}`;
                 } else {
                     const keyInput = document.getElementById('adminkey-input').value.trim();
 
@@ -617,11 +590,6 @@
                 }
 
                 // Test authentication by calling chat sessions
-                const button = document.querySelector('.action-btn.success');
-                const originalText = button.textContent;
-                button.textContent = '🔄 Verificando...';
-                button.disabled = true;
-
                 const response = await fetch(`/api/status/chat-sessions?${queryParams}`);
                 const result = await response.json();
 
@@ -630,22 +598,15 @@
                     currentAuthParams = queryParams;
                     updateAuthUI();
                     loadChatStats();
-                    showSuccessMessage('✅ Autenticación exitosa! Bienvenido al panel admin.');
+                    alert('✅ Autenticación exitosa!');
                 } else {
-                    throw new Error(result.detail || 'Credenciales incorrectas');
+                    throw new Error(result.detail || 'Error de autenticación');
                 }
 
             } catch (error) {
                 console.error('Login error:', error);
-                showErrorMessage('❌ Error de autenticación: ' + error.message);
+                alert('❌ Error de autenticación: ' + error.message);
                 resetAuthState();
-            } finally {
-                // Reset button
-                const button = document.querySelector('.action-btn.success');
-                if (button) {
-                    button.textContent = '✅ Autenticar';
-                    button.disabled = false;
-                }
             }
         }
 
@@ -653,53 +614,7 @@
             resetAuthState();
             updateAuthUI();
             clearChatSessions();
-            showSuccessMessage('✅ Sesión cerrada exitosamente');
-        }
-
-        // Message display functions
-        function showSuccessMessage(message) {
-            showMessage(message, 'success');
-        }
-
-        function showErrorMessage(message) {
-            showMessage(message, 'error');
-        }
-
-        function showMessage(message, type) {
-            // Remove any existing messages
-            const existingMessage = document.querySelector('.message-toast');
-            if (existingMessage) {
-                existingMessage.remove();
-            }
-
-            // Create message element
-            const messageEl = document.createElement('div');
-            messageEl.className = `message-toast message-${type}`;
-            messageEl.textContent = message;
-
-            // Add styles
-            messageEl.style.cssText = `
-                position: fixed;
-                top: 20px;
-                right: 20px;
-                background: ${type === 'success' ? '#28a745' : '#dc3545'};
-                color: white;
-                padding: 16px 24px;
-                border-radius: 8px;
-                font-weight: 600;
-                box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-                z-index: 1000;
-                animation: slideInRight 0.3s ease;
-                max-width: 400px;
-            `;
-
-            document.body.appendChild(messageEl);
-
-            // Auto remove after 4 seconds
-            setTimeout(() => {
-                messageEl.style.animation = 'slideOutRight 0.3s ease';
-                setTimeout(() => messageEl.remove(), 300);
-            }, 4000);
+            alert('✅ Sesión cerrada exitosamente');
         }
 
         // Function to reset authentication state
@@ -954,13 +869,12 @@
         // Data update function
         async function updateData() {
             if (!isAuthenticated) {
-                showErrorMessage('⚠️ Se requiere autenticación de administrador para actualizar datos');
+                alert('⚠️ Se requiere autenticación de administrador para actualizar datos');
                 return;
             }
             
-            if (!confirm('¿Confirmar actualización de datos de la base de datos?\n\nEsto puede tardar varios minutos.')) {
-                return;
-            }
+            const confirmUpdate = confirm('¿Confirmar actualización de datos de la base de datos?\n\nEsto puede tardar varios minutos.');
+            if (!confirmUpdate) return;
             
             const button = document.getElementById('update-data-btn');
             const originalText = button.textContent;
@@ -987,7 +901,7 @@
                 const result = await response.json();
                 
                 if (response.ok) {
-                    showSuccessMessage('✅ ' + result.message);
+                    alert('✅ ' + result.message);
                     // Refresh status after successful update
                     await loadStatus();
                 } else {
@@ -996,7 +910,7 @@
                 
             } catch (error) {
                 console.error('Error updating data:', error);
-                showErrorMessage(`❌ Error actualizando datos: ${error.message}`);
+                alert(`❌ Error actualizando datos: ${error.message}`);
                 
                 // Fallback: just refresh status
                 try {

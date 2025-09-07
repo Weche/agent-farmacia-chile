@@ -253,7 +253,7 @@ def verify_admin_access_from_request(request: Request):
     return {"is_admin": False, "message": "Access denied - Invalid credentials"}
 
 
-def verify_admin_access(admin_key: str = Query(None), username: str = Query(None)):
+def verify_admin_access(admin_key: str = Query(None), username: str = Query(None), password: str = Query(None)):
     """Verify admin access for sensitive operations"""
     # Multiple authentication methods for flexibility
     
@@ -261,26 +261,36 @@ def verify_admin_access(admin_key: str = Query(None), username: str = Query(None
     env_key = os.getenv("ADMIN_KEY")
     
     # Method 2: Username/Password combination (for production)
-    admin_username = os.getenv("ADMIN_USERNAME", "admin")
-    admin_password = os.getenv("ADMIN_PASSWORD")
+    admin_username = os.getenv("ADMIN_USERNAME", "pharmacy_admin")
+    admin_password = os.getenv("ADMIN_PASSWORD", "SecurePharmacy2024!")
     
     # Method 3: Runtime-generated key (most secure for production)
     runtime_key = os.getenv("RUNTIME_ADMIN_KEY")
     
     valid_access = False
+    auth_method = None
     
-    # Check if username/password provided
-    if username and admin_key:
-        if username == admin_username and admin_password and admin_key == admin_password:
+    # Check if username/password provided (preferred method)
+    if username and password:
+        if username == admin_username and password == admin_password:
             valid_access = True
+            auth_method = "userpass"
+    
+    # Check if username/admin_key provided (backward compatibility)
+    elif username and admin_key:
+        if username == admin_username and admin_key == admin_password:
+            valid_access = True
+            auth_method = "userpass_compat"
     
     # Check runtime key (highest priority)
     elif runtime_key and admin_key == runtime_key:
         valid_access = True
+        auth_method = "runtime_key"
     
     # Check environment key (fallback for development)
     elif env_key and admin_key == env_key:
         valid_access = True
+        auth_method = "env_key"
     
     if not valid_access:
         raise HTTPException(
