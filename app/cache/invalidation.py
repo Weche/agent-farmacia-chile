@@ -23,7 +23,7 @@ class CacheInvalidationManager:
     """
     
     def __init__(self):
-        self.db_path = "pharmacy_finder.db"
+        self.db_path = os.getenv('DATABASE_URL', 'pharmacy_finder.db')
         self.last_db_modified = None
         self.last_minsal_check = None
         self.check_interval = int(get_env_value("CACHE_HEALTH_CHECK_INTERVAL", "60"))
