@@ -77,9 +77,20 @@ REJECTION_TRIGGERS = [
 
 @app.on_event("startup")
 async def startup_event():
-    """Initialize Redis connection, Spanish AI Agent, and warm up cache"""
+    """Initialize Redis connection, Spanish AI Agent, database updates, and warm up cache"""
     global spanish_agent
     logger.info("🚀 Starting Pharmacy Finder application...")
+    
+    # Auto-update database if needed (check every startup)
+    try:
+        from app.services.data_updater import data_updater
+        update_result = await data_updater.update_if_needed()
+        if update_result.get('updated'):
+            logger.info(f"✅ Database auto-updated: {update_result.get('pharmacy_count', 0)} pharmacies")
+        else:
+            logger.info(f"✅ Database is fresh: {update_result.get('pharmacy_count', 0)} pharmacies")
+    except Exception as e:
+        logger.warning(f"⚠️  Database auto-update failed: {e} - continuing with existing data")
     
     # Initialize Redis connection
     redis_client = await get_redis_client()
@@ -116,6 +127,49 @@ async def shutdown_event():
     await redis_client.disconnect()
     
     logger.info("✅ Application shutdown completed")
+
+@app.get("/admin/update-database")
+async def force_database_update():
+    """Force database update - admin endpoint"""
+    try:
+        from app.services.data_updater import data_updater
+        result = await data_updater.force_update()
+        
+        if result.get('updated'):
+            return {
+                "success": True,
+                "message": "Database updated successfully",
+                "pharmacy_count": result.get('pharmacy_count', 0),
+                "on_duty": result.get('on_duty', 0),
+                "regular": result.get('regular', 0)
+            }
+        else:
+            return {
+                "success": False,
+                "message": "Database update failed",
+                "error": result.get('error', 'Unknown error')
+            }
+    except Exception as e:
+        return {
+            "success": False,
+            "message": f"Update error: {str(e)}"
+        }
+
+@app.get("/admin/database-status")
+async def get_database_status():
+    """Get current database status - admin endpoint"""
+    try:
+        from app.services.data_updater import data_updater
+        info = data_updater.get_database_age()
+        return {
+            "success": True,
+            "database_info": info
+        }
+    except Exception as e:
+        return {
+            "success": False,
+            "error": str(e)
+        }
 
 @app.get("/health")
 def health():
