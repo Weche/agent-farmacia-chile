@@ -262,7 +262,7 @@ class GoogleMapsPlacesNearbyTool(BaseTool):
         }
     
     def execute(self, latitude: float, longitude: float, place_type: str = "pharmacy", 
-                radius: int = 5000, keyword: str = "") -> Dict:
+                radius: int = 10000, keyword: str = "") -> Dict:
         """
         Find nearby places
         

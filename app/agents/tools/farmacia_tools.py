@@ -289,7 +289,7 @@ class SearchFarmaciasNearbyTool(BaseTool):
         try:
             latitud = float(kwargs.get("latitud", 0))
             longitud = float(kwargs.get("longitud", 0))
-            radio_km = float(kwargs.get("radio_km", 5.0))
+            radio_km = float(kwargs.get("radio_km", 10.0))
             solo_abiertas = kwargs.get("solo_abiertas", True)
             limite = kwargs.get("limite", 10)
             

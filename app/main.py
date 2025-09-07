@@ -81,6 +81,32 @@ async def startup_event():
     global spanish_agent
     logger.info("🚀 Starting Pharmacy Finder application...")
     
+    # Log environment information for diagnostics
+    logger.info(f"🌍 Environment: {ENV}")
+    logger.info(f"🗄️  Database URL: {os.getenv('DATABASE_URL', 'Not set')}")
+    logger.info(f"📋 Vademecum path: {os.getenv('VADEMECUM_PATH', 'Not set')}")
+    logger.info(f"🔗 Redis URL configured: {'Yes' if os.getenv('REDIS_URL') else 'No'}")
+    logger.info(f"🤖 OpenAI API configured: {'Yes' if os.getenv('OPENAI_API_KEY') else 'No'}")
+    
+    # Check file system access
+    db_path = os.getenv('DATABASE_URL', 'pharmacy_finder.db')
+    vademecum_path = os.getenv('VADEMECUM_PATH', './data/comprehensive_vademecum.csv')
+    
+    logger.info(f"📁 Database file exists: {Path(db_path).exists()}")
+    logger.info(f"📁 Vademecum file exists: {Path(vademecum_path).exists()}")
+    
+    if Path("/app/data").exists():
+        data_files = list(Path("/app/data").glob("*"))
+        logger.info(f"📁 Files in /app/data: {[f.name for f in data_files]}")
+    
+    # Test vademecum loading early for diagnostics
+    try:
+        from app.services.vademecum_service import load_vademecum
+        vademecum_data = load_vademecum(vademecum_path)
+        logger.info(f"📋 Vademecum loaded: {len(vademecum_data)} medications")
+    except Exception as e:
+        logger.error(f"❌ Vademecum loading failed: {e}")
+    
     # Auto-update database if needed (check every startup)
     try:
         from app.services.data_updater import data_updater
@@ -89,6 +115,11 @@ async def startup_event():
             logger.info(f"✅ Database auto-updated: {update_result.get('pharmacy_count', 0)} pharmacies")
         else:
             logger.info(f"✅ Database is fresh: {update_result.get('pharmacy_count', 0)} pharmacies")
+        # Log effective DB path for diagnostics
+        try:
+            logger.info(f"🗄️  Using database at: {db.db_path}")
+        except Exception as e:
+            logger.warning(f"Could not log DB path: {e}")
     except Exception as e:
         logger.warning(f"⚠️  Database auto-update failed: {e} - continuing with existing data")
     
@@ -117,6 +148,18 @@ async def startup_event():
         logger.warning("⚠️  Redis unavailable - continuing with SQLite only")
     
     logger.info("🎯 Application startup completed")
+
+@app.get("/api/db-info")
+def get_db_info():
+    """Debug endpoint to view DB path and counts"""
+    try:
+        stats = db.get_pharmacy_count()
+        return {
+            "db_path": db.db_path,
+            "counts": stats
+        }
+    except Exception as e:
+        return {"error": str(e), "db_path": getattr(db, 'db_path', None)}
 
 @app.on_event("shutdown")
 async def shutdown_event():
@@ -546,7 +589,7 @@ def get_open_now_pharmacies(
     lat: Optional[float] = Query(None, description="Latitude for location-based search"),
     lng: Optional[float] = Query(None, description="Longitude for location-based search"),
     comuna: Optional[str] = Query(None, description="Commune for commune-based search"),
-    radius: float = Query(5.0, description="Search radius in km")
+    radius: float = Query(10.0, description="Search radius in km")
 ):
     """Get pharmacies that are currently open"""
     try:
@@ -595,7 +638,7 @@ def get_open_now_pharmacies(
 def get_nearby_pharmacies(
     lat: float = Query(..., description="Latitude"),
     lng: float = Query(..., description="Longitude"),
-    radius: float = Query(5.0, description="Search radius in km"),
+    radius: float = Query(10.0, description="Search radius in km"),
     abierto: bool = Query(False, description="Only open pharmacies"),
     abierto_ahora: bool = Query(False, description="Only pharmacies open right now")
 ):

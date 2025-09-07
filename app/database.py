@@ -179,7 +179,7 @@ class PharmacyDatabase:
             conn.commit()
 
     def find_nearby_pharmacies(self, lat: float, lng: float,
-                              radius_km: float = 5.0,
+                              radius_km: float = 10.0,
                               only_open: bool = False) -> List[Pharmacy]:
         """Find pharmacies within radius of a location"""
         # Simple distance calculation using Haversine formula approximation
@@ -370,7 +370,7 @@ class PharmacyDatabase:
             return pharmacy.es_turno
 
     def find_nearby_pharmacies_open_now(self, lat: float, lng: float,
-                                       radius_km: float = 5.0) -> List[Pharmacy]:
+                                       radius_km: float = 10.0) -> List[Pharmacy]:
         """Find pharmacies within radius that are currently open"""
         pharmacies = self.find_nearby_pharmacies(lat, lng, radius_km, False)
         return [p for p in pharmacies if self.is_pharmacy_currently_open(p)]
@@ -391,11 +391,11 @@ class PharmacyDatabase:
 _default_db = PharmacyDatabase()
 
 
-def find_nearby_pharmacies(lat: float, lng: float, radius_km: float = 5.0, only_open: bool = False):
+def find_nearby_pharmacies(lat: float, lng: float, radius_km: float = 10.0, only_open: bool = False):
     return _default_db.find_nearby_pharmacies(lat, lng, radius_km, only_open)
 
 
-def find_nearby_pharmacies_open_now(lat: float, lng: float, radius_km: float = 5.0):
+def find_nearby_pharmacies_open_now(lat: float, lng: float, radius_km: float = 10.0):
     return _default_db.find_nearby_pharmacies_open_now(lat, lng, radius_km)
 
 
