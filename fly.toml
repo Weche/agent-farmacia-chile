@@ -11,7 +11,7 @@ primary_region = "mia"  # Miami - good for Latin America
   PORT = "8080"
   
   # Database
-  DATABASE_URL = "./pharmacy_finder.db"
+  DATABASE_URL = "/app/data/pharmacy_finder.db"
   
   # API Configuration
   MINSAL_API_BASE = "https://midas.minsal.cl/farmacia_v2/WS"
@@ -49,7 +49,7 @@ primary_region = "mia"  # Miami - good for Latin America
 [restart_policy]
   policy = "on-failure"
 
-# Volume for persistent data (optional)
-# [mounts]
-# source = "pharmacy_data"
-# destination = "/app/data"
+# Volume for persistent data
+[mounts]
+  source = "pharmacy_data"
+  destination = "/app/data"

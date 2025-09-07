@@ -6,6 +6,7 @@ from typing import Optional, List
 from datetime import datetime, time
 import sqlite3
 import json
+import os
 
 @dataclass
 class Pharmacy:
@@ -71,7 +72,8 @@ class PharmacyDatabase:
     """SQLite database manager for pharmacies"""
 
     def __init__(self, db_path: str = "pharmacy_finder.db"):
-        self.db_path = db_path
+        # Allow overriding via environment (e.g., when using a mounted volume on Fly)
+        self.db_path = os.getenv("DATABASE_URL", db_path)
         self.init_database()
 
     def init_database(self):
