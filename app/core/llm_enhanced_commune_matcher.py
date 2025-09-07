@@ -90,17 +90,19 @@ class LLMEnhancedCommuneMatcher:
     def load_from_database(self):
         """Load commune data directly from database"""
         try:
-            conn = sqlite3.connect("pharmacy_finder.db")
+            db_path = os.getenv('DATABASE_URL', 'pharmacy_finder.db')
+            conn = sqlite3.connect(db_path)
             cursor = conn.cursor()
             
-            cursor.execute("SELECT DISTINCT comuna FROM farmacias WHERE comuna IS NOT NULL")
+            # Use correct table name 'pharmacies'
+            cursor.execute("SELECT DISTINCT comuna FROM pharmacies WHERE comuna IS NOT NULL")
             communes = [row[0] for row in cursor.fetchall()]
             
             self.communes_data = {commune: {"normalized": self.normalize_text(commune)} 
                                 for commune in communes}
             
             conn.close()
-            print(f"✅ Loaded {len(self.communes_data)} communes from database")
+            print(f"✅ Loaded {len(self.communes_data)} communes from database ({db_path})")
         except Exception as e:
             print(f"❌ Error loading from database: {e}")
     
