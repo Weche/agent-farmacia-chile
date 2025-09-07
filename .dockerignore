@@ -1,0 +1,11 @@
+*.md
+*.log
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+*.sh
+*.ps1
+*.bat
+*.example
+*.bck

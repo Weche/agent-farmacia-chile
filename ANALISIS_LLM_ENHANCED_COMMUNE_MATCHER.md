@@ -1,12 +1,9 @@
-ANÁLISIS: llm_enhanced_commune_matcher.py
-==========================================
+# ANÁLISIS: llm_enhanced_commune_matcher.py
 
-FECHA: 5 de Septiembre, 2025
-ESTADO: Archivo core del sistema LLM + Embeddings
+- FECHA: 5 de Septiembre, 2025
+- ESTADO: Archivo core del sistema LLM + Embeddings
 
-==========================================
-PROPÓSITO Y FUNCIÓN
-==========================================
+## PROPÓSITO Y FUNCIÓN
 
 El archivo `llm_enhanced_commune_matcher.py` es una PIEZA FUNDAMENTAL del sistema que implementa:
 
@@ -22,9 +19,7 @@ El archivo `llm_enhanced_commune_matcher.py` es una PIEZA FUNDAMENTAL del sistem
 - "buscar farmacias villa alemana" → extrae "Villa Alemana"
 - Variaciones de escritura, acentos, mayúsculas/minúsculas
 
-==========================================
-ESTADO DE INTEGRACIÓN ACTUAL
-==========================================
+## ESTADO DE INTEGRACIÓN ACTUAL
 
 ✅ **YA ESTÁ COMPLETAMENTE INTEGRADO AL SISTEMA:**
 
@@ -45,12 +40,9 @@ ESTADO DE INTEGRACIÓN ACTUAL
    - Evaluación completa muestra 85% de éxito
    - Casos como "La Florida" resueltos exitosamente
 
-==========================================
-DEPENDENCIAS Y ARQUITECTURA
-==========================================
+## DEPENDENCIAS Y ARQUITECTURA
 
-DEPENDENCIAS REQUERIDAS:
-========================
+### DEPENDENCIAS REQUERIDAS:
 
 🔧 **Core Dependencies:**
 - `openai` - Para GPT-3.5-turbo
@@ -61,8 +53,7 @@ DEPENDENCIAS REQUERIDAS:
 - Si no están disponibles, usa fallback methods
 - Sistema degrada gracefully sin perder funcionalidad básica
 
-ARQUITETURA DE USO:
-==================
+### ARQUITETURA DE USO:
 
 ```
 Query: "farmacias en la florida"
@@ -81,9 +72,7 @@ EnhancedPharmacyDatabase.smart_find_by_comuna()
 SearchFarmaciasTool → 77 farmacias encontradas
 ```
 
-==========================================
-UBICACIÓN RECOMENDADA
-==========================================
+## UBICACIÓN RECOMENDADA
 
 ❌ **PROBLEMA ACTUAL:**
 El archivo está en la RAÍZ del proyecto, causando:
@@ -100,12 +89,9 @@ RAZONES:
 - Necesita ser importado por tools y database
 - Debería tener import absoluto: `from app.core.llm_enhanced_commune_matcher import ...`
 
-==========================================
-ESTADO DE RENDIMIENTO
-==========================================
+## ESTADO DE RENDIMIENTO
 
-MÉTRICAS ACTUALES:
-=================
+### MÉTRICAS ACTUALES:
 
 ✅ **Casos Exitosos (85% general):**
 - "¿Hay farmacias en Providencia?" → ÉXITO
@@ -116,15 +102,12 @@ MÉTRICAS ACTUALES:
 - "¿Tienen farmacias en Villa Alemana?" → No ejecuta herramientas (bug diferente)
 - Algunas consultas ambiguas
 
-IMPACTO EN PRODUCCIÓN:
-=====================
+### IMPACTO EN PRODUCCIÓN:
 - Sistema La Florida: 0 farmacias → 77 farmacias ✅
 - Smart matching evita errores de escritura
 - Mejora experiencia de usuario significativamente
 
-==========================================
-RECOMENDACIONES
-==========================================
+## RECOMENDACIONES
 
 🔴 **ACCIÓN INMEDIATA RECOMENDADA:**
 
@@ -154,9 +137,7 @@ RECOMENDACIONES
    - Fine-tuning de prompts LLM
    - Expansión de patrones regex fallback
 
-==========================================
-CONCLUSIÓN
-==========================================
+## CONCLUSIÓN
 
 El archivo `llm_enhanced_commune_matcher.py`:
 
@@ -166,5 +147,3 @@ El archivo `llm_enhanced_commune_matcher.py`:
 ✅ **NO TIENE DEPENDENCIAS FALTANTES** - Todo está configurado correctamente
 
 ACCIÓN: Mover a `app/core/` y actualizar imports para completar la organización del proyecto.
-
-==========================================
