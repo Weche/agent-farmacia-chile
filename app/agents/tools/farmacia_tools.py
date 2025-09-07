@@ -80,14 +80,18 @@ class SearchFarmaciasTool(BaseTool):
             }
         
         try:
+            logger.info(f"🔍 Searching pharmacies for comuna='{comuna}', turno={turno}")
+            
             # Use smart matching if available
             if self.use_smart_matching and hasattr(self.db, 'smart_find_by_comuna'):
                 # Use enhanced search with smart commune matching
+                logger.info("🧠 Using smart matching for pharmacy search")
                 farmacias_filtradas, match_result = self.db.smart_find_by_comuna(
                     comuna, 
                     only_open=turno,
                     confidence_threshold=0.7
                 )
+                logger.info(f"🧠 Smart match result: {len(farmacias_filtradas)} pharmacies, confidence={match_result.confidence:.3f}")
                 
                 # Create smart response
                 search_response = SmartSearchResponse(
@@ -120,10 +124,12 @@ class SearchFarmaciasTool(BaseTool):
             
             else:
                 # Fallback to regular search
+                logger.info("📊 Using fallback database search (no smart matching)")
                 if turno:
                     farmacias_filtradas = self.db.find_by_comuna(comuna, only_open=True)
                 else:
                     farmacias_filtradas = self.db.find_by_comuna(comuna, only_open=False)
+                logger.info(f"📊 Fallback search result: {len(farmacias_filtradas)} pharmacies found")
             
             # Apply additional filters based on search type
             if turno:
