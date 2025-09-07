@@ -30,8 +30,8 @@ primary_region = "mia"  # Miami - good for Latin America
   max_machines_running = 2
 
   [[http_service.checks]]
-    interval = 30000
-    timeout = 5000
+    interval = "30s"
+    timeout = "5s"  
     method = "GET"
     path = "/health"
 

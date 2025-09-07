@@ -170,8 +170,8 @@ cython_debug/
 *~
 
 # Project specific
-pharmacy_finder.db
-*.db
+# pharmacy_finder.db  # Temporarily included for deployment
+# *.db               # Allow pharmacy DB
 *.sqlite
 *.sqlite3
 
