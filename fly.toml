@@ -3,7 +3,7 @@ app = "pharmacy-finder-chile"
 primary_region = "mia"  # Miami - good for Latin America
 
 [build]
-  builder = "paketobuildpacks/builder:base"
+  dockerfile = "Dockerfile"
 
 [env]
   APP_NAME = "Farmacias Chile"
@@ -26,30 +26,24 @@ primary_region = "mia"  # Miami - good for Latin America
   force_https = true
   auto_stop_machines = true
   auto_start_machines = true
-  min_machines_running = 1
+  min_machines_running = 0
+  max_machines_running = 2
 
-  # Health check
-  [http_service.checks]
-    [http_service.checks.alive]
-      type = "http"
-      interval = 30000
-      timeout = 5000
-      path = "/health"
+  [[http_service.checks]]
+    interval = 30000
+    timeout = 5000
+    method = "GET"
+    path = "/health"
 
-[[services.ports]]
-  port = 80
-  handlers = ["http"]
-  force_https = true
-
-[[services.ports]]
-  port = 443
-  handlers = ["tls", "http"]
-
-# Resource allocation
-[resource]
-  cpu_kind = "shared"
-  cpus = 1
-  memory_mb = 512
+# Machine size - Small shared CPU for cost efficiency
+[vm]
+  size = "shared-cpu-1x"  # 1 CPU, 256MB RAM
+  
+# Auto-scaling configuration
+[http_service.concurrency]
+  type = "requests"
+  hard_limit = 25
+  soft_limit = 15
 
 # Restart policy
 [restart_policy]

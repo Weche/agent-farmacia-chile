@@ -185,9 +185,13 @@ data/*.parquet
 *.log
 logs/
 
-# Cache directories
-cache/
-.cache/
+# Cache directories (build/temp cache only, not app cache)
+/.cache/
+.pytest_cache/
+*.cache/
+
+# Allow app/cache/ - our Redis cache implementation
+!app/cache/
 
 # OS generated files
 .DS_Store
@@ -217,3 +221,7 @@ models/
 # Backup files
 *.bak
 *.backup
+
+# Keep important deployment files
+!Dockerfile
+!fly.toml
