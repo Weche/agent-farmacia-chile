@@ -8,7 +8,7 @@
     <meta name="theme-color" content="#1a1a2e">
     
     <!-- Favicon -->
-    <link rel="icon" type="image/png" href="/templates/assets/images/logo1.png">
+    <link rel="icon" type="image/png" href="/templates/assets/images/logo_yellow.png">
     
     <!-- Preconnect to external resources -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -280,13 +280,98 @@
     }
     </script>
 </head>
+<!-- ✳️ Terms & Conditions Modal START -->
+<style>
+  .terms-overlay{position:fixed;inset:0;background:rgba(0,0,0,.6);display:none;align-items:center;justify-content:center;z-index:3000}
+  .terms-modal{position:relative;width:min(720px,92vw);background:#fff;color:#1f2937;border-radius:16px;padding:28px 24px 20px;box-shadow:0 20px 60px rgba(0,0,0,.35);line-height:1.5;font-family:'Inter',system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif}
+  [data-theme="dark"] .terms-modal{background:#1f1f1f;color:#e5e7eb;box-shadow:0 20px 60px rgba(0,0,0,.6)}
+  .terms-logo-badge{position:absolute;top:-22px;left:-22px;width:64px;height:64px;border-radius:9999px;border:3px solid rgba(255,255,255,.9);overflow:hidden;box-shadow:0 6px 20px rgba(0,0,0,.35);background:#fff;display:grid;place-items:center}
+  [data-theme="dark"] .terms-logo-badge{border-color:rgba(0,0,0,.5);background:#0b0b0b}
+  .terms-logo-badge img{width:100%;height:100%;object-fit:cover}
+  .terms-title{margin:4px 0 8px;font-size:clamp(18px,2.4vw,22px);font-weight:700;letter-spacing:.2px}
+  .terms-text{font-size:clamp(14px,1.8vw,15.5px);opacity:.95;margin:8px 0 16px}
+  .terms-actions{display:flex;gap:10px;justify-content:flex-end;margin-top:4px}
+  .btn-terms{appearance:none;border:0;border-radius:10px;padding:10px 14px;font-weight:600;cursor:pointer;transition:transform .08s ease,box-shadow .2s ease,background .2s ease,color .2s ease}
+  .btn-accept{background:linear-gradient(135deg,#22c55e,#16a34a);color:#fff;box-shadow:0 4px 16px rgba(34,197,94,.35)}
+  .btn-accept:active{transform:translateY(1px) scale(.99)}
+  .btn-decline{background:#eef2ff;color:#334155}
+  [data-theme="dark"] .btn-decline{background:#2a2a2a;color:#e5e7eb}
+  .terms-minitext{font-size:12px;opacity:.8;margin-top:6px}
+  body.terms-locked{overflow:hidden}
+</style>
+
+<div id="termsOverlay" class="terms-overlay" role="dialog" aria-modal="true" aria-labelledby="termsTitle">
+  <div class="terms-modal">
+    <div class="terms-logo-badge" aria-hidden="true">
+      <!-- Cambia este src por tu logo -->
+      <img id="termsLogo" src="/templates/assets/images/logo_red.png" alt="Logo">
+    </div>
+
+    <h3 id="termsTitle" class="terms-title">Términos y Condiciones de Uso</h3>
+    <p class="terms-text">
+      “El Buscador de Farmacias es un servicio de apoyo informativo. El usuario acepta que los datos provistos son de carácter referencial y no sustituyen diagnóstico ni atención médica profesional. La plataforma asegura el tratamiento de la información personal según Ley 19.628 sobre Protección de la Vida Privada y demás normativa sanitaria vigente en Chile. El uso del sistema supone aceptar estas condiciones y la responsabilidad individual en la toma de decisiones.”
+    </p>
+    <div class="terms-actions">
+      <button id="termsDecline" class="btn-terms btn-decline">No acepto</button>
+      <button id="termsAccept" class="btn-terms btn-accept">Acepto</button>
+    </div>
+    <div class="terms-minitext">
+      Al presionar <strong>Acepto</strong>, declaras haber leído y entendido estas condiciones.
+    </div>
+  </div>
+</div>
+
+<script>
+  (function () {
+    const TERMS_VERSION = "2025-09-08-v1";       // Cámbiala si editas el texto
+    const KEY = "pf_terms_accepted:" + TERMS_VERSION;
+
+    const overlay = document.getElementById("termsOverlay");
+    const btnAccept = document.getElementById("termsAccept");
+    const btnDecline = document.getElementById("termsDecline");
+
+    function showModal() {
+      overlay.style.display = "flex";
+      document.body.classList.add("terms-locked"); // Bloquea scroll del fondo
+      btnDecline?.focus();
+    }
+    function hideModal() {
+      overlay.style.display = "none";
+      document.body.classList.remove("terms-locked");
+    }
+
+    // Mostrar si no hay aceptación guardada (versionada)
+    const alreadyAccepted = localStorage.getItem(KEY) === "true";
+    if (!alreadyAccepted) {
+      if (document.readyState === "loading") {
+        document.addEventListener("DOMContentLoaded", showModal, { once: true });
+      } else {
+        showModal();
+      }
+    }
+
+    btnAccept?.addEventListener("click", function () {
+      localStorage.setItem(KEY, "true");
+      hideModal();
+    });
+
+    btnDecline?.addEventListener("click", function () {
+      alert("Gracias por visitar Farmacias Chile. Te redirigiremos ahora.");
+      window.location.href = "https://www.google.com/";
+    });
+  })();
+</script>
+<!-- ✳️ Terms & Conditions Modal END -->
+
+
 
 <body>
+
     <!-- App Header with Theme Toggle (back inside body for JS access) -->
     <header class="app-header">
         <div class="header-left">
             <a href="/" class="logo">
-                <img src="/templates/assets/images/logo1.png" alt="Logo" style="height: 32px; width: auto; margin-right: 8px; vertical-align: middle;">
+                <img src="/templates/assets/images/logo_red.png" alt="Logo" style="height: 32px; width: auto; margin-right: 8px; vertical-align: middle;">
                 Farmacias Chile
             </a>
         </div>
@@ -327,7 +412,7 @@
                 <div class="chat-main-panel">
                     <div class="chat-header-main">
                         <div class="ai-avatar-large">
-                            <img src="/templates/assets/images/logo1.png" alt="AI Assistant" style="width: 60px; height: 60px; border-radius: 50%; object-fit: contain;">
+                            <img src="/templates/assets/images/logo_red.png" alt="AI Assistant" style="width: 60px; height: 60px; border-radius: 50%; object-fit: contain;">
                         </div>
                         <div class="ai-info-main">
                             <h2>Asistente Farmacéutico</h2>
@@ -379,8 +464,6 @@
                     <div class="map-preview-container">
                         <div id="mapPreview" class="map-preview"></div>
                     </div>
-                    
-                    <!-- Quick Actions -->
                     
                 </div>
             </div>
@@ -1533,6 +1616,26 @@
             }
         }
     </style>
+
+    <!-- Terms and Conditions Modal Script -->
+    <script>
+        // Show the modal on page load
+        window.addEventListener('DOMContentLoaded', () => {
+            const modal = document.getElementById('termsModal');
+            const acceptBtn = document.getElementById('acceptTerms');
+            const rejectBtn = document.getElementById('rejectTerms');
+
+            modal.style.display = 'flex';
+
+            acceptBtn.addEventListener('click', () => {
+                modal.style.display = 'none';
+            });
+
+            rejectBtn.addEventListener('click', () => {
+                window.location.href = 'https://www.google.com';
+            });
+        });
+    </script>
 
 </body>
 </html>

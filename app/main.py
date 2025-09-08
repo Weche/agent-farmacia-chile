@@ -669,6 +669,7 @@ def get_nearby_pharmacies(
                 }
                 for p in pharmacies
             ],
+            "count": len(pharmacies),
             "source": "database"
         }
     except Exception as e:

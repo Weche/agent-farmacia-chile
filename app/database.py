@@ -181,11 +181,12 @@ class PharmacyDatabase:
     def find_nearby_pharmacies(self, lat: float, lng: float,
                               radius_km: float = 10.0,
                               only_open: bool = False) -> List[Pharmacy]:
-        """Find pharmacies within radius of a location"""
-        # Simple distance calculation using Haversine formula approximation
-        # For more accuracy, we'd use proper geospatial functions
-        lat_range = radius_km / 111.0  # ~111km per degree latitude
-        lng_range = radius_km / (111.0 * abs(lat)) if lat != 0 else radius_km / 111.0
+        """Find pharmacies within radius of a location using Haversine distance"""
+        import math
+        
+        # Use a broader bounding box to get candidate pharmacies
+        lat_range = radius_km / 111.0 * 1.5  # Expand by 50% to ensure we don't miss any
+        lng_range = radius_km / (111.0 * math.cos(math.radians(abs(lat)))) * 1.5 if lat != 0 else radius_km / 111.0 * 1.5
 
         query = '''
             SELECT * FROM pharmacies
@@ -198,14 +199,40 @@ class PharmacyDatabase:
 
         if only_open:
             query += " AND es_turno = 1"
-        query += " ORDER BY (lat - ?)*(lat - ?) + (lng - ?)*(lng - ?) ASC LIMIT 50"
 
         with sqlite3.connect(self.db_path) as conn:
             cursor = conn.cursor()
-            cursor.execute(query, params + [lat, lat, lng, lng])
+            cursor.execute(query, params)
             rows = cursor.fetchall()
 
-        return [self._row_to_pharmacy(row) for row in rows]
+        # Convert to pharmacy objects and filter by actual distance
+        candidates = [self._row_to_pharmacy(row) for row in rows]
+        
+        def haversine_distance(lat1, lon1, lat2, lon2):
+            """Calculate the great circle distance between two points on Earth"""
+            R = 6371  # Earth's radius in kilometers
+            
+            # Convert latitude and longitude from degrees to radians
+            lat1, lon1, lat2, lon2 = map(math.radians, [lat1, lon1, lat2, lon2])
+            
+            # Haversine formula
+            dlat = lat2 - lat1
+            dlon = lon2 - lon1
+            a = math.sin(dlat/2)**2 + math.cos(lat1) * math.cos(lat2) * math.sin(dlon/2)**2
+            c = 2 * math.asin(math.sqrt(a))
+            
+            return R * c
+        
+        # Filter by actual distance and sort
+        nearby_pharmacies = []
+        for pharmacy in candidates:
+            distance = haversine_distance(lat, lng, pharmacy.lat, pharmacy.lng)
+            if distance <= radius_km:
+                nearby_pharmacies.append((pharmacy, distance))
+        
+        # Sort by distance and return pharmacies only
+        nearby_pharmacies.sort(key=lambda x: x[1])
+        return [pharmacy for pharmacy, distance in nearby_pharmacies]
 
     def find_by_comuna(self, comuna: str, only_open: bool = False) -> List[Pharmacy]:
         """Find pharmacies in a specific commune"""
