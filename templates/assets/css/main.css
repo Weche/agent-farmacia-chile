@@ -155,7 +155,8 @@ body {
 
 /* Hero Section */
 .hero-section {
-  min-height: 100vh;
+  min-height: auto;
+  padding-bottom: 5vh;
   background: var(--gradient-hero);
   display: flex;
   flex-direction: column;
