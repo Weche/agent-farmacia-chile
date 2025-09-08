@@ -9,10 +9,48 @@ from datetime import datetime, timedelta
 from typing import Dict, Any
 import asyncio
 
-# Add parent directory to path
-sys.path.append(os.path.join(os.path.dirname(__file__), '../..'))
+# Add parent directory to path for proper imports
+current_dir = os.path.dirname(__file__)
+app_root = os.path.join(current_dir, '../..')
+sys.path.insert(0, app_root)
 
-from data.import_data import MINSALDataImporter
+print(f"🔍 Attempting to import from app_root: {app_root}")
+print(f"🔍 Current working directory: {os.getcwd()}")
+print(f"🔍 Python path: {sys.path[:3]}")  # Show first 3 paths
+
+try:
+    from data.import_data import MINSALDataImporter
+    print("✅ Successfully imported MINSALDataImporter via data.import_data")
+except ImportError as e:
+    print(f"❌ Failed to import data.import_data: {e}")
+    # Try multiple fallback paths
+    import importlib.util
+    
+    fallback_paths = [
+        os.path.join(app_root, 'data', 'import_data.py'),
+        '/app/data_source/import_data.py',  # New source backup location
+        '/app/data/import_data.py',  # Original data location
+    ]
+    
+    for import_data_path in fallback_paths:
+        print(f"🔍 Trying fallback import from: {import_data_path}")
+        if os.path.exists(import_data_path):
+            print("✅ Found import_data.py file, attempting dynamic import")
+            spec = importlib.util.spec_from_file_location("import_data", import_data_path)
+            import_data_module = importlib.util.module_from_spec(spec)
+            spec.loader.exec_module(import_data_module)
+            MINSALDataImporter = import_data_module.MINSALDataImporter
+            print(f"✅ Successfully imported MINSALDataImporter via fallback: {import_data_path}")
+            break
+        else:
+            print(f"❌ Not found at: {import_data_path}")
+    else:
+        # List what files are actually there in various directories
+        for check_dir in ['/app/data', '/app/data_source', os.path.join(app_root, 'data')]:
+            if os.path.exists(check_dir):
+                print(f"📁 Files in {check_dir}: {os.listdir(check_dir)}")
+        raise ImportError("Cannot import MINSALDataImporter - not found in any fallback path")
+
 from app.database import PharmacyDatabase
 
 

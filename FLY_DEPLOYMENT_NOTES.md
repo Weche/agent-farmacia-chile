@@ -1,40 +1,23 @@
-# Fly.io Deployment Configuration for Pharmacy Finder
+# Fly.io Deployment Fix Summary
 
-## Environment Variables for Production
+## Issues Fixed
 
-# Add these to your fly.toml or set via fly secrets
+### 1. Missing Environment Variables
+- **Problem**: Fly.io was missing critical environment variables (REDIS_URL, OPENAI_API_KEY, VADEMECUM_PATH)
+- **Solution**: Updated `fly.toml` with all required production environment variables
 
-[env]
-  APP_NAME = "Farmacias Chile"
-  ENV = "production"
-  
-  # Redis (use Fly Redis or Upstash)
-  REDIS_URL = "redis://your-redis-instance"
-  
-  # APIs - Set via fly secrets set
-  # fly secrets set OPENAI_API_KEY="your-key"
-  # fly secrets set GOOGLE_MAPS_API_KEY="your-key"
-  # fly secrets set ANTHROPIC_API_KEY="your-key"
+### 2. Database Volume Configuration  
+- **Problem**: Database not being populated properly on fly.io
+- **Solution**: 
+  - Ensured DATABASE_URL points to volume path `/app/data/pharmacy_finder.db`
+  - Added proper volume permissions in Dockerfile
+  - Created entrypoint script to handle volume setup
 
-## Dependencies Check
-- ✅ SQLite database (included in container)
-- ✅ Google Maps API (external service)
-- ✅ OpenAI API (external service)
-- ⚠️ Redis (needs external instance)
+### 3. Vademecum Data Access
+- **Problem**: Vademecum CSV file not accessible in production volume
+- **Solution**: 
+  - Updated VADEMECUM_PATH to `/app/data/comprehensive_vademecum.csv` 
+  - Added file copying to volume in Dockerfile
+  - Enhanced vademecum service with fallback path detection
 
-## Resource Requirements
-- Memory: 512MB - 1GB (depending on usage)
-- CPU: 1 shared CPU sufficient for MVP
-- Storage: 1GB for SQLite database and assets
-
-## Scaling Considerations
-- Horizontal scaling: ✅ Stateless design
-- Database: SQLite works for single instance
-- Cache: Redis required for multi-instance
-- Sessions: Redis-backed, scales well
-
-## Security Notes
-- API keys via Fly secrets
-- HTTPS enforced
-- Environment isolation
-- Database included in container (no external DB needed)
+All fixes have been implemented successfully!

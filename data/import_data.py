@@ -133,50 +133,65 @@ class MINSALDataImporter:
 
     def load_backup_data(self, data_type: str) -> List[Dict]:
         """Load backup data when API fails"""
-        backup_file = os.path.join(os.path.dirname(__file__), 'pharmacy_backup.json')
+        # Try multiple locations for backup file
+        backup_locations = [
+            os.path.join(os.path.dirname(__file__), 'pharmacy_backup.json'),
+            '/app/data_source/pharmacy_backup.json',  # Container source location
+            '/app/data/pharmacy_backup.json',  # Volume location
+        ]
+        
+        backup_file = None
+        for location in backup_locations:
+            if os.path.exists(location):
+                backup_file = location
+                print(f"🔍 Found backup file at: {backup_file}")
+                break
+        
+        if not backup_file:
+            print(f"❌ No backup file found in locations: {backup_locations}")
+            return []
         
         try:
-            if os.path.exists(backup_file):
-                with open(backup_file, 'r', encoding='utf-8') as f:
-                    backup_data = json.load(f)
+            with open(backup_file, 'r', encoding='utf-8') as f:
+                backup_data = json.load(f)
                 
-                pharmacies = []
-                for item in backup_data.get('pharmacies', []):
-                    # Expect at least 14 fields (index 0..13), where index 13 is es_turno
-                    if len(item) < 14:
-                        continue
-                    
-                    # Convert list to dict format expected by Pharmacy.from_api_data
-                    # Keys aligned to app.database.Pharmacy.from_api_data expectations
-                    pharmacy_dict = {
-                        'local_id': str(item[0]),
-                        'local_nombre': item[1],
-                        'local_direccion': item[2],
-                        'comuna_nombre': item[3],
-                        'localidad_nombre': item[4],
-                        'fk_region': item[5],
-                        'local_telefono': item[6],
-                        'local_lat': str(item[7]),
-                        'local_lng': str(item[8]),
-                        'funcionamiento_hora_apertura': item[9],
-                        'funcionamiento_hora_cierre': item[10],
-                        'funcionamiento_dia': item[11],
-                        'fecha': item[12]
-                    }
-                    
-                    # Filter by type
-                    try:
-                        es_turno = int(item[13])
-                    except (ValueError, TypeError):
-                        # If parsing fails, skip this row to avoid misclassification
-                        continue
+            pharmacies = []
+            for item in backup_data.get('pharmacies', []):
+                # Expect at least 14 fields (index 0..13), where index 13 is es_turno
+                if len(item) < 14:
+                    continue
+                
+                # Convert list to dict format expected by Pharmacy.from_api_data
+                # Keys aligned to app.database.Pharmacy.from_api_data expectations
+                pharmacy_dict = {
+                    'local_id': str(item[0]),
+                    'local_nombre': item[1],
+                    'local_direccion': item[2],
+                    'comuna_nombre': item[3],
+                    'localidad_nombre': item[4],
+                    'fk_region': item[5],
+                    'local_telefono': item[6],
+                    'local_lat': str(item[7]),
+                    'local_lng': str(item[8]),
+                    'funcionamiento_hora_apertura': item[9],
+                    'funcionamiento_hora_cierre': item[10],
+                    'funcionamiento_dia': item[11],
+                    'fecha': item[12]
+                }
+                
+                # Filter by type
+                try:
+                    es_turno = int(item[13])
+                except (ValueError, TypeError):
+                    # If parsing fails, skip this row to avoid misclassification
+                    continue
 
-                    if data_type == 'regular' and es_turno == 0:
-                        pharmacies.append(pharmacy_dict)
-                    elif data_type == 'turno' and es_turno == 1:
-                        pharmacies.append(pharmacy_dict)
-                
-                return pharmacies
+                if data_type == 'regular' and es_turno == 0:
+                    pharmacies.append(pharmacy_dict)
+                elif data_type == 'turno' and es_turno == 1:
+                    pharmacies.append(pharmacy_dict)
+            
+            return pharmacies
                 
         except Exception as e:
             print(f"❌ Error loading backup data: {e}")

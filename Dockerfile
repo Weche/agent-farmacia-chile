@@ -44,11 +44,44 @@ COPY templates ./templates
 COPY data ./data
 COPY .env.example ./
 
+# Create data directory and backup location  
+RUN mkdir -p /app/data /app/data_backup /app/data_source
+
+# Backup vademecum file for volume copying
+RUN cp /app/data/comprehensive_vademecum.csv /app/data_backup/ && \
+    ls -la /app/data_backup/comprehensive_vademecum.csv
+
+# Copy all Python modules and backup data to data_source (won't be overwritten by volume)
+RUN cp -r /app/data/*.py /app/data_source/ && \
+    cp /app/data/pharmacy_backup.json /app/data_source/ && \
+    ls -la /app/data_source/
+
 # Create non-root user for security
 RUN useradd --create-home --shell /bin/bash app \
     && chown -R app:app /app
-## Note: We keep running as root to ensure write access to mounted volume /app/data
-## If you prefer non-root, add an entrypoint that chowns the volume at runtime, then `su -s /bin/sh -c` to app user.
+
+# Ensure the data directory has proper permissions for the volume mount
+RUN chmod 755 /app/data
+
+# Create entrypoint script to handle volume permissions
+RUN echo '#!/bin/bash' > /app/entrypoint.sh && \
+    echo 'echo "🚀 Starting Pharmacy Finder..."' >> /app/entrypoint.sh && \
+    echo 'echo "📁 Ensuring volume permissions..."' >> /app/entrypoint.sh && \
+    echo 'chmod 755 /app/data' >> /app/entrypoint.sh && \
+    echo 'if [ ! -f "/app/data/comprehensive_vademecum.csv" ]; then' >> /app/entrypoint.sh && \
+    echo '  echo "📋 Copying vademecum to volume..."' >> /app/entrypoint.sh && \
+    echo '  if [ -f "/app/data_backup/comprehensive_vademecum.csv" ]; then' >> /app/entrypoint.sh && \
+    echo '    cp /app/data_backup/comprehensive_vademecum.csv /app/data/comprehensive_vademecum.csv' >> /app/entrypoint.sh && \
+    echo '    echo "✅ Vademecum copied from backup"' >> /app/entrypoint.sh && \
+    echo '  else' >> /app/entrypoint.sh && \
+    echo '    echo "❌ No vademecum backup found"' >> /app/entrypoint.sh && \
+    echo '  fi' >> /app/entrypoint.sh && \
+    echo 'fi' >> /app/entrypoint.sh && \
+    echo 'echo "🗄️  Database path: $DATABASE_URL"' >> /app/entrypoint.sh && \
+    echo 'echo "📋 Vademecum path: $VADEMECUM_PATH"' >> /app/entrypoint.sh && \
+    echo 'echo "🏁 Starting application..."' >> /app/entrypoint.sh && \
+    echo 'exec "$@"' >> /app/entrypoint.sh && \
+    chmod +x /app/entrypoint.sh
 
 # Health check endpoint
 HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
@@ -56,6 +89,9 @@ HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
 
 # Expose port (matching fly.toml)
 EXPOSE 8080
+
+# Use entrypoint script for proper volume setup
+ENTRYPOINT ["/app/entrypoint.sh"]
 
 # Optimized startup command  
 CMD ["python", "-m", "uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8080", "--workers", "1"]

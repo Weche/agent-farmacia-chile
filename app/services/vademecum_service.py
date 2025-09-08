@@ -23,16 +23,48 @@ def _load_from_csv(path: str) -> List[Dict]:
     return out
 
 def load_vademecum(path: Optional[str]) -> List[Dict]:
+    import logging
+    logger = logging.getLogger(__name__)
+    
     if not path:
+        logger.warning("⚠️  No vademecum path provided")
         return []
+    
+    logger.info(f"📋 Loading vademecum from: {path}")
     p = Path(path)
+    
     if not p.exists():
+        logger.error(f"❌ Vademecum file not found: {path}")
+        # Try alternative paths for debugging
+        alt_paths = [
+            "./data/comprehensive_vademecum.csv",
+            "/app/data/comprehensive_vademecum.csv",
+            "comprehensive_vademecum.csv"
+        ]
+        for alt_path in alt_paths:
+            if Path(alt_path).exists():
+                logger.info(f"📋 Found vademecum at alternative path: {alt_path}")
+                p = Path(alt_path)
+                break
+        else:
+            logger.error(f"❌ Vademecum not found in any alternative paths: {alt_paths}")
+            return []
+    
+    try:
+        if p.suffix.lower() in [".parquet", ".pq"]:
+            data = _load_from_parquet(str(p))
+        elif p.suffix.lower() in [".csv", ".txt"]:
+            data = _load_from_csv(str(p))
+        else:
+            logger.error(f"❌ Unsupported vademecum file format: {p.suffix}")
+            return []
+        
+        logger.info(f"✅ Vademecum loaded successfully: {len(data)} medications")
+        return data
+        
+    except Exception as e:
+        logger.error(f"❌ Error loading vademecum: {e}")
         return []
-    if p.suffix.lower() in [".parquet", ".pq"]:
-        return _load_from_parquet(str(p))
-    if p.suffix.lower() in [".csv", ".txt"]:
-        return _load_from_csv(str(p))
-    return []
 
 def search_vademecum(items: List[Dict], q: str, limit: int=10) -> List[Dict]:
     """

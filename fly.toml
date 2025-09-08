@@ -17,9 +17,40 @@ primary_region = "mia"  # Miami - good for Latin America
   MINSAL_API_BASE = "https://midas.minsal.cl/farmacia_v2/WS"
   HTTP_TIMEOUT = "10.0"
   
-  # Cache
-  CACHE_TTL = "300"
+  # Vademecum Data
+  VADEMECUM_PATH = "/app/data/comprehensive_vademecum.csv"
+  
+  # Redis Cache Configuration
+  REDIS_URL = "redis://default:P31KYp6IlYIHVNazeCHvlpZw5lUi6DRp@redis-15448.crce181.sa-east-1-2.ec2.redns.redis-cloud.com:15448"
+  
+  # Cache Settings
+  CACHE_TTL_CRITICAL = "300"      # 5 minutes
+  CACHE_TTL_HIGH = "1800"         # 30 minutes
+  CACHE_TTL_MEDIUM = "21600"      # 6 hours
+  CACHE_TTL_LOW = "86400"         # 24 hours
+  AUTO_INVALIDATE_ON_DB_CHANGE = "true"
+  CHECK_MINSAL_API_UPDATES = "true"
   CACHE_HEALTH_CHECK_INTERVAL = "60"
+  
+  # AI Agent Configuration
+  OPENAI_API_KEY = "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"
+  AGENT_MODEL = "gpt-4o-mini"
+  AGENT_TEMPERATURE = "0.1"
+  AGENT_MAX_TOKENS = "500"
+  AGENT_SAFETY_MODE = "strict"
+  
+  # Session Management
+  SESSION_EXPIRY_HOURS = "2"
+  MAX_CONVERSATION_LENGTH = "50"
+  SESSION_CLEANUP_INTERVAL = "3600"
+  
+  # Database Auto-update
+  AUTO_UPDATE_DB_HOURS = "1"  # Check for updates every hour
+  
+  # Fallback Settings
+  FALLBACK_TO_SQLITE = "true"
+  SERVE_STALE_ON_ERROR = "true"
+  MAX_STALE_AGE_SECONDS = "3600"
 
 [http_service]
   internal_port = 8080
