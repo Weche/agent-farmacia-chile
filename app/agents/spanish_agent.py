@@ -198,6 +198,12 @@ class SpanishPharmacyAgent:
     "📍 Para asegurar que encuentres opciones, expandí la búsqueda hasta [X]km y encontré [Y] farmacias en tu área."
     "🎯 La búsqueda se expandió automáticamente para mejores resultados..."
 
+    **RESPUESTA PARA UBICACIÓN DETECTADA:**
+    Si el sistema detectó automáticamente la ubicación del usuario (ubicacion_detectada), menciona esto de manera natural:
+    "📍 Detecté que estás en [COMUNA] y encontré [X] farmacias en tu área."
+    "🗺️ Basado en tu ubicación en [COMUNA], estas son las farmacias disponibles:"
+    "📍 Tu ubicación parece estar en [COMUNA] (aproximadamente), aquí tienes las opciones:"
+
     Usuario: "¿Qué es el paracetamol?"
     Tú: "💊 El paracetamol es un medicamento analgésico y antipirético..."
     [Usar lookup_medicamento con medicamento="paracetamol"]

@@ -10,6 +10,7 @@ from app.agents.tools.base_tool import BaseTool
 from app.database import PharmacyDatabase
 from app.cache.redis_client import get_redis_client
 from app.utils.location_utils import enhance_pharmacy_info
+from app.services.geocoding_service import geocoding_service
 
 logger = logging.getLogger(__name__)
 
@@ -301,6 +302,15 @@ class SearchFarmaciasNearbyTool(BaseTool):
                     "data": {"farmacias": [], "total": 0}
                 }
             
+            # Reverse geocoding to detect location
+            location_info = None
+            try:
+                location_info = geocoding_service.reverse_geocode(latitud, longitud)
+                logger.info(f"📍 Location detected: {location_info.commune or 'Unknown'} (method: {location_info.method})")
+            except Exception as e:
+                logger.warning(f"⚠️ Reverse geocoding failed: {e}")
+                location_info = None
+            
             # Search for nearby pharmacies with intelligent radius expansion
             farmacias_cercanas = []
             radius_used = radio_km
@@ -354,15 +364,19 @@ class SearchFarmaciasNearbyTool(BaseTool):
                 farmacias_formateadas.append(farmacia_info)
             
             # Determine message based on results and radius expansion
+            location_text = ""
+            if location_info and location_info.commune:
+                location_text = f" cerca de {geocoding_service.get_location_summary(location_info)}"
+            
             if farmacias_formateadas:
                 tipo_busqueda = "abiertas" if solo_abiertas else "en el área"
                 if radius_used > radio_km:
-                    mensaje = f"Se encontraron {len(farmacias_formateadas)} farmacias {tipo_busqueda} expandiendo la búsqueda a {radius_used}km (iniciado con {radio_km}km)."
+                    mensaje = f"Se encontraron {len(farmacias_formateadas)} farmacias {tipo_busqueda}{location_text} expandiendo la búsqueda a {radius_used}km (iniciado con {radio_km}km)."
                 else:
-                    mensaje = f"Se encontraron {len(farmacias_formateadas)} farmacias {tipo_busqueda} en un radio de {radius_used}km."
+                    mensaje = f"Se encontraron {len(farmacias_formateadas)} farmacias {tipo_busqueda}{location_text} en un radio de {radius_used}km."
             else:
                 tipo_busqueda = "abiertas" if solo_abiertas else ""
-                mensaje = f"No se encontraron farmacias {tipo_busqueda} incluso expandiendo la búsqueda hasta {radius_used}km."
+                mensaje = f"No se encontraron farmacias {tipo_busqueda}{location_text} incluso expandiendo la búsqueda hasta {radius_used}km."
             
             return {
                 "success": True,
@@ -377,7 +391,14 @@ class SearchFarmaciasNearbyTool(BaseTool):
                         "intentos_busqueda": search_attempts,
                         "solo_abiertas": solo_abiertas,
                         "total_encontradas": len(farmacias_formateadas),
-                        "mostradas": len(farmacias_formateadas)
+                        "mostradas": len(farmacias_formateadas),
+                        "ubicacion_detectada": {
+                            "comuna": location_info.commune if location_info else None,
+                            "region": location_info.region if location_info else None,
+                            "confidence": location_info.confidence if location_info else 0.0,
+                            "metodo": location_info.method if location_info else "none",
+                            "descripcion": geocoding_service.get_location_summary(location_info) if location_info else "ubicación no detectada"
+                        }
                     },
                     "total": len(farmacias_formateadas),
                     "mensaje": mensaje
