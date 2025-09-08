@@ -268,7 +268,7 @@ class SearchFarmaciasNearbyTool(BaseTool):
     def __init__(self):
         super().__init__(
             name="search_farmacias_nearby",
-            description="Busca farmacias cercanas a unas coordenadas geográficas específicas. Utiliza latitud y longitud para encontrar las farmacias más cercanas."
+            description="Busca farmacias cercanas a coordenadas geográficas con expansión inteligente de radio. Automáticamente expande la búsqueda de 10km hasta 25km si es necesario para encontrar suficientes farmacias. Ideal para áreas rurales o con poca densidad de farmacias."
         )
         self.db = PharmacyDatabase()
     
@@ -279,7 +279,7 @@ class SearchFarmaciasNearbyTool(BaseTool):
         Args:
             latitud (float): Latitud de la ubicación
             longitud (float): Longitud de la ubicación  
-            radio_km (float, optional): Radio de búsqueda en kilómetros (default: 5.0)
+            radio_km (float, optional): Radio inicial de búsqueda en kilómetros (default: 10.0). Se expandirá automáticamente a 15, 20, 25km si es necesario.
             solo_abiertas (bool, optional): Solo farmacias abiertas (default: True)
             limite (int, optional): Número máximo de resultados (default: 10)
             
@@ -301,11 +301,47 @@ class SearchFarmaciasNearbyTool(BaseTool):
                     "data": {"farmacias": [], "total": 0}
                 }
             
-            # Search for nearby pharmacies
-            if solo_abiertas:
-                farmacias_cercanas = self.db.find_nearby_pharmacies_open_now(latitud, longitud, radio_km)
-            else:
-                farmacias_cercanas = self.db.find_nearby_pharmacies(latitud, longitud, radio_km, False)
+            # Search for nearby pharmacies with intelligent radius expansion
+            farmacias_cercanas = []
+            radius_used = radio_km
+            search_attempts = []
+            
+            # Progressive search: try initial radius, then expand if needed
+            search_radii = [radio_km, 15.0, 20.0, 25.0] if radio_km <= 10.0 else [radio_km]
+            
+            for current_radius in search_radii:
+                if solo_abiertas:
+                    farmacias_cercanas = self.db.find_nearby_pharmacies_open_now(latitud, longitud, current_radius)
+                else:
+                    farmacias_cercanas = self.db.find_nearby_pharmacies(latitud, longitud, current_radius, False)
+                
+                search_attempts.append({
+                    "radius": current_radius,
+                    "results": len(farmacias_cercanas)
+                })
+                
+                radius_used = current_radius
+                
+                # Stop conditions based on results found
+                if len(farmacias_cercanas) >= 3:
+                    # Found sufficient results - stop here
+                    logger.info(f"✅ Found {len(farmacias_cercanas)} pharmacies at {current_radius}km radius")
+                    break
+                elif len(farmacias_cercanas) > 0 and current_radius >= 15.0:
+                    # Found some results and already expanded once - good enough
+                    logger.info(f"✅ Found {len(farmacias_cercanas)} pharmacies at {current_radius}km radius (expanded search)")
+                    break
+                elif len(farmacias_cercanas) > 0 and current_radius == radio_km:
+                    # Found results at initial radius, but try expanding once to see if we get more
+                    logger.info(f"⚡ Found {len(farmacias_cercanas)} pharmacies at {current_radius}km, trying larger area...")
+                    continue
+                elif len(farmacias_cercanas) == 0:
+                    # No results - keep expanding
+                    logger.warning(f"❌ No pharmacies found at {current_radius}km radius, expanding...")
+                    continue
+                else:
+                    # Default: continue to next radius
+                    continue
             
             # Apply limit
             farmacias_resultado = farmacias_cercanas[:limite] if limite > 0 else farmacias_cercanas
@@ -317,13 +353,16 @@ class SearchFarmaciasNearbyTool(BaseTool):
                 farmacia_info = enhance_pharmacy_info(farmacia, self.db)
                 farmacias_formateadas.append(farmacia_info)
             
-            # Determine message based on results
+            # Determine message based on results and radius expansion
             if farmacias_formateadas:
                 tipo_busqueda = "abiertas" if solo_abiertas else "en el área"
-                mensaje = f"Se encontraron {len(farmacias_formateadas)} farmacias {tipo_busqueda} en un radio de {radio_km}km."
+                if radius_used > radio_km:
+                    mensaje = f"Se encontraron {len(farmacias_formateadas)} farmacias {tipo_busqueda} expandiendo la búsqueda a {radius_used}km (iniciado con {radio_km}km)."
+                else:
+                    mensaje = f"Se encontraron {len(farmacias_formateadas)} farmacias {tipo_busqueda} en un radio de {radius_used}km."
             else:
                 tipo_busqueda = "abiertas" if solo_abiertas else ""
-                mensaje = f"No se encontraron farmacias {tipo_busqueda} en un radio de {radio_km}km de tu ubicación."
+                mensaje = f"No se encontraron farmacias {tipo_busqueda} incluso expandiendo la búsqueda hasta {radius_used}km."
             
             return {
                 "success": True,
@@ -332,7 +371,10 @@ class SearchFarmaciasNearbyTool(BaseTool):
                     "resumen": {
                         "latitud": latitud,
                         "longitud": longitud,
-                        "radio_km": radio_km,
+                        "radio_km": radius_used,
+                        "radio_inicial": radio_km,
+                        "radio_expandido": radius_used > radio_km,
+                        "intentos_busqueda": search_attempts,
                         "solo_abiertas": solo_abiertas,
                         "total_encontradas": len(farmacias_formateadas),
                         "mostradas": len(farmacias_formateadas)
