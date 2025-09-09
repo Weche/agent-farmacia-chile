@@ -291,8 +291,8 @@ class SearchFarmaciasNearbyTool(BaseTool):
             latitud = float(kwargs.get("latitud", 0))
             longitud = float(kwargs.get("longitud", 0))
             radio_km = float(kwargs.get("radio_km", 10.0))
-            solo_abiertas = kwargs.get("solo_abiertas", True)
-            limite = kwargs.get("limite", 10)
+            solo_abiertas = kwargs.get("solo_abiertas", False)  # Changed: Show all pharmacies by default
+            limite = kwargs.get("limite", 15)  # Increased default limit for dense areas
             
             # Validate coordinates
             if latitud == 0 or longitud == 0:
@@ -332,35 +332,69 @@ class SearchFarmaciasNearbyTool(BaseTool):
                 
                 radius_used = current_radius
                 
-                # Stop conditions based on results found
-                if len(farmacias_cercanas) >= 3:
-                    # Found sufficient results - stop here
+                # Stop conditions based on results found - improved for dense urban areas
+                if len(farmacias_cercanas) >= 10 or (len(farmacias_cercanas) >= 5 and current_radius >= 15.0):
+                    # Found sufficient results for dense areas - stop here
                     logger.info(f"✅ Found {len(farmacias_cercanas)} pharmacies at {current_radius}km radius")
                     break
-                elif len(farmacias_cercanas) > 0 and current_radius >= 15.0:
-                    # Found some results and already expanded once - good enough
+                elif len(farmacias_cercanas) > 0 and current_radius >= 20.0:
+                    # Found some results and already expanded significantly - good enough
                     logger.info(f"✅ Found {len(farmacias_cercanas)} pharmacies at {current_radius}km radius (expanded search)")
                     break
-                elif len(farmacias_cercanas) > 0 and current_radius == radio_km:
-                    # Found results at initial radius, but try expanding once to see if we get more
-                    logger.info(f"⚡ Found {len(farmacias_cercanas)} pharmacies at {current_radius}km, trying larger area...")
+                elif len(farmacias_cercanas) > 0 and current_radius == radio_km and len(farmacias_cercanas) < 5:
+                    # Found few results at initial radius, try expanding to get more options
+                    logger.info(f"⚡ Found {len(farmacias_cercanas)} pharmacies at {current_radius}km, trying larger area for more options...")
                     continue
                 elif len(farmacias_cercanas) == 0:
                     # No results - keep expanding
                     logger.warning(f"❌ No pharmacies found at {current_radius}km radius, expanding...")
                     continue
                 else:
-                    # Default: continue to next radius
+                    # Default: continue to next radius if we have few results
                     continue
             
-            # Apply limit
-            farmacias_resultado = farmacias_cercanas[:limite] if limite > 0 else farmacias_cercanas
+            # Implement distance-based reranking with turno pharmacy priority
+            import math
             
-            # Format results for agent with enhanced location features
+            def calculate_distance(lat1, lon1, lat2, lon2):
+                """Calculate Haversine distance between two points"""
+                R = 6371  # Earth's radius in kilometers
+                lat1, lon1, lat2, lon2 = map(math.radians, [lat1, lon1, lat2, lon2])
+                dlat = lat2 - lat1
+                dlon = lon2 - lon1
+                a = math.sin(dlat/2)**2 + math.cos(lat1) * math.cos(lat2) * math.sin(dlon/2)**2
+                c = 2 * math.asin(math.sqrt(a))
+                return R * c
+            
+            # Calculate distances and create enriched pharmacy objects
+            farmacias_con_distancia = []
+            for farmacia in farmacias_cercanas:
+                distance = calculate_distance(latitud, longitud, farmacia.lat, farmacia.lng)
+                farmacias_con_distancia.append((farmacia, distance))
+            
+            # Sort by priority: turno pharmacies first, then by distance
+            farmacias_con_distancia.sort(key=lambda x: (not x[0].es_turno, x[1]))  # es_turno=True first, then distance
+            
+            logger.info(f"🔄 Reranked {len(farmacias_con_distancia)} pharmacies by distance and turno priority")
+            
+            # Apply limit after reranking
+            farmacias_resultado_tuples = farmacias_con_distancia[:limite] if limite > 0 else farmacias_con_distancia
+            farmacias_resultado = [farmacia for farmacia, distance in farmacias_resultado_tuples]
+            
+            # Format results for agent with enhanced location features and distance info
             farmacias_formateadas = []
-            for farmacia in farmacias_resultado:
+            for i, farmacia in enumerate(farmacias_resultado):
+                # Get the corresponding distance from our reranked list
+                distance = farmacias_resultado_tuples[i][1] if i < len(farmacias_resultado_tuples) else None
+                
                 # Use enhanced formatting with location features
                 farmacia_info = enhance_pharmacy_info(farmacia, self.db)
+                
+                # Add calculated distance to the pharmacy info
+                if distance is not None:
+                    farmacia_info["distancia_km"] = round(distance, 2)
+                    farmacia_info["distancia_texto"] = f"{distance:.1f} km"
+                
                 farmacias_formateadas.append(farmacia_info)
             
             # Determine message based on results and radius expansion

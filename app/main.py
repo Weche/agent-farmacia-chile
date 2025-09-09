@@ -214,6 +214,135 @@ async def get_database_status():
             "error": str(e)
         }
 
+@app.get("/admin/volume-debug")
+async def debug_volume():
+    """Debug volume mounting and database access"""
+    debug_info = {
+        "timestamp": datetime.now().isoformat(),
+        "environment": os.getenv("ENV", "unknown"),
+        "database_url_env": os.getenv("DATABASE_URL"),
+    }
+    
+    # Check volume directory
+    volume_path = "/app/data"
+    debug_info["volume_path"] = volume_path
+    debug_info["volume_exists"] = os.path.exists(volume_path)
+    
+    if os.path.exists(volume_path):
+        try:
+            # List contents
+            debug_info["volume_contents"] = os.listdir(volume_path)
+            
+            # Check permissions
+            debug_info["volume_readable"] = os.access(volume_path, os.R_OK)
+            debug_info["volume_writable"] = os.access(volume_path, os.W_OK)
+            debug_info["volume_executable"] = os.access(volume_path, os.X_OK)
+            
+            # Try to create a test file
+            test_file = os.path.join(volume_path, "test_write.txt")
+            try:
+                with open(test_file, "w") as f:
+                    f.write("test")
+                debug_info["can_write_files"] = True
+                os.remove(test_file)  # Clean up
+            except Exception as e:
+                debug_info["can_write_files"] = False
+                debug_info["write_error"] = str(e)
+                
+        except Exception as e:
+            debug_info["volume_error"] = str(e)
+    
+    # Check database file specifically
+    db_path = os.getenv("DATABASE_URL", "/app/data/pharmacy_finder.db")
+    debug_info["db_path"] = db_path
+    debug_info["db_file_exists"] = os.path.exists(db_path)
+    
+    if os.path.exists(db_path):
+        try:
+            debug_info["db_file_size"] = os.path.getsize(db_path)
+            debug_info["db_readable"] = os.access(db_path, os.R_OK)
+            debug_info["db_writable"] = os.access(db_path, os.W_OK)
+            
+            # Try to connect to database
+            conn = sqlite3.connect(db_path)
+            cursor = conn.cursor()
+            
+            # Check tables
+            cursor.execute("SELECT name FROM sqlite_master WHERE type='table'")
+            tables = cursor.fetchall()
+            debug_info["db_tables"] = [t[0] for t in tables]
+            
+            # Check pharmacy count
+            if any("pharmacies" in str(t) for t in tables):
+                cursor.execute("SELECT COUNT(*) FROM pharmacies")
+                count = cursor.fetchone()[0]
+                debug_info["pharmacy_count"] = count
+                
+                # Sample data
+                cursor.execute("SELECT * FROM pharmacies LIMIT 3")
+                sample = cursor.fetchall()
+                debug_info["sample_pharmacies"] = len(sample)
+            else:
+                debug_info["pharmacy_table_missing"] = True
+                
+            conn.close()
+            debug_info["db_connection"] = "success"
+            
+        except Exception as e:
+            debug_info["db_error"] = str(e)
+    
+    # Test import functionality
+    debug_info["import_test"] = {}
+    try:
+        from app.services.data_updater import data_updater
+        age_info = data_updater.get_database_age()
+        debug_info["import_test"]["age_check"] = age_info
+        
+        # Test if we can create the database directory
+        db_dir = os.path.dirname(db_path)
+        os.makedirs(db_dir, exist_ok=True)
+        debug_info["import_test"]["db_dir_created"] = True
+        
+    except Exception as e:
+        debug_info["import_test"]["error"] = str(e)
+    
+    return {
+        "status": "debug_complete",
+        "debug_info": debug_info
+    }
+
+@app.post("/admin/force-volume-update")
+async def force_volume_update():
+    """Force database update with detailed logging"""
+    try:
+        from app.services.data_updater import data_updater
+        
+        # Get initial state
+        initial_state = data_updater.get_database_age()
+        
+        # Force update
+        update_result = await data_updater.force_update()
+        
+        # Get final state
+        final_state = data_updater.get_database_age()
+        
+        return {
+            "status": "force_update_complete",
+            "initial_state": initial_state,
+            "update_result": update_result,
+            "final_state": final_state,
+            "volume_path": "/app/data",
+            "db_path": os.getenv("DATABASE_URL")
+        }
+        
+    except Exception as e:
+        import traceback
+        return {
+            "status": "force_update_failed",
+            "error": str(e),
+            "traceback": traceback.format_exc()
+        }
+
 @app.get("/health")
 def health():
     return {"status": "ok", "env": ENV}
@@ -686,27 +815,64 @@ def get_communes():
 
 @app.get("/api/search")
 def search_pharmacies(
-    comuna: Optional[str] = Query(None, description="Commune name to search in"),
+    comuna: Optional[str] = Query(None, description="Commune name to search in (Spanish)"),
+    commune: Optional[str] = Query(None, description="Commune name to search in (English)"),
+    query: Optional[str] = Query(None, description="General search query (commune name, pharmacy name, etc.)"),
     abierto: bool = Query(False, description="Only show pharmacies de turno"),
     limit: int = Query(50, description="Maximum number of results")
 ):
-    """Search pharmacies by commune"""
+    """
+    Search pharmacies by commune with enhanced parameter support
+    
+    Parameters:
+    - comuna: Commune name (Spanish parameter name)
+    - commune: Commune name (English parameter name) 
+    - query: General search query for commune or pharmacy names
+    - abierto: Filter for only turno pharmacies
+    - limit: Maximum results to return
+    """
     try:
-        if comuna:
-            pharmacies = db.find_by_comuna(comuna, only_open=abierto)
+        # Determine the search term from multiple possible parameters
+        search_term = comuna or commune or query
+        
+        if search_term:
+            # Clean and normalize the search term
+            search_term = search_term.strip().upper()
+            pharmacies = db.find_by_comuna(search_term, only_open=abierto)
+            
+            # If no exact results and search_term looks like a query, try additional searches
+            if not pharmacies and query:
+                # For general queries, also try searching pharmacy names
+                search_term_lower = search_term.lower()
+                with sqlite3.connect(db.db_path) as conn:
+                    cursor = conn.cursor()
+                    query_sql = '''
+                        SELECT * FROM pharmacies 
+                        WHERE (UPPER(comuna) LIKE ? OR UPPER(nombre) LIKE ? OR UPPER(localidad) LIKE ?)
+                          AND lat != 0 AND lng != 0
+                    '''
+                    params = [f'%{search_term}%', f'%{search_term}%', f'%{search_term}%']
+                    
+                    if abierto:
+                        query_sql += " AND es_turno = 1"
+                    
+                    query_sql += " ORDER BY nombre LIMIT ?"
+                    params.append(limit)
+                    
+                    cursor.execute(query_sql, params)
+                    rows = cursor.fetchall()
+                    pharmacies = [db._row_to_pharmacy(row) for row in rows]
         else:
-            # Return some default pharmacies
-            pharmacies = []
-            with sqlite3.connect(db.db_path) as conn:
-                cursor = conn.cursor()
-                if abierto:
-                    cursor.execute('SELECT * FROM pharmacies WHERE es_turno = 1 LIMIT ?', (limit,))
-                else:
-                    cursor.execute('SELECT * FROM pharmacies LIMIT ?', (limit,))
-                rows = cursor.fetchall()
-                pharmacies = [db._row_to_pharmacy(row) for row in rows]
+            # No search term provided - return error instead of default results
+            return {
+                "items": [],
+                "count": 0,
+                "source": "database",
+                "error": "No search parameters provided. Use 'comuna', 'commune', or 'query' parameter.",
+                "available_communes": len(db.get_all_communes())
+            }
 
-        return {
+        result = {
             "items": [
                 {
                     "local_id": p.local_id,
@@ -726,8 +892,19 @@ def search_pharmacies(
                 for p in pharmacies[:limit]
             ],
             "count": len(pharmacies),
+            "total_found": len(pharmacies),
+            "search_term": search_term,
+            "search_type": "turno" if abierto else "all",
             "source": "database"
         }
+        
+        # Add helpful info if no results found
+        if len(pharmacies) == 0:
+            result["message"] = f"No pharmacies found for '{search_term}'"
+            result["suggestions"] = "Try checking spelling or use exact commune name from /api/communes"
+        
+        return result
+        
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error searching pharmacies: {e}")
 
@@ -1131,34 +1308,39 @@ if (window.chatManager && window.chatManager.formatAIResponse) {
     return HTMLResponse(test_html)
 
 
-# 🔍 SIMPLE CHAT TEST ENDPOINT  
+# 🤖 AI AGENT CHAT ENDPOINT  
 @app.post("/api/chat")
-async def simple_chat_test(request: ChatPayload):
-    """Endpoint simplificado para test de chat"""
-    message = request.message
+async def ai_agent_chat(request: ChatSessionPayload):
+    """AI Agent chat endpoint - uses Spanish pharmacy agent with session management"""
+    if not spanish_agent:
+        raise HTTPException(status_code=503, detail="AI Agent not available")
     
-    # Respuesta de prueba con enlaces markdown
-    test_response = f"""Encontré 3 farmacias de turno en Maipú:
-
-1. 🏪 FARMAQUINTA
-📍 Dirección: AVENIDA VALPARAISO 1621, VILLA ALEMANA
-📞 Teléfono: +56 79 859 135
-⏰ Horario: Viernes 00:00 - 23:59
-🌐 [Ver en Google Maps](https://maps.google.com/maps?q=-33.0449112,-71.3856936)
-
-2. 🏪 BELLFARMA  
-📍 Dirección: HUANHUALI 1331, VILLA ALEMANA
-📞 Teléfono: +563118844
-⏰ Horario: Sábado 09:00 - 18:00 (Por abrir)
-🌐 [Ver en Google Maps](https://maps.google.com/maps?q=-33.058657929509,-71.3860337445243)
-
-3. 🏪 FARMA CHILE
-📍 Dirección: JORGE DÉLANO N° 70, MAIPU
-📞 Teléfono: +56
-⏰ Horario: Sábado 08:00 - 07:59 (Por abrir)  
-🌐 [Ver en Google Maps](https://maps.google.com/maps?q=-33.482677,-70.747523)"""
-    
-    return {"message": test_response}
+    try:
+        # Get or create session from the request
+        session_id = request.session_id
+        
+        # If no session provided, create a new one
+        if not session_id:
+            session_id = await spanish_agent.create_session()
+        
+        # Process the message with the agent
+        response = await spanish_agent.process_message(session_id, request.message)
+        
+        # Return the response in the expected format
+        return {
+            "message": response.get('response', 'Error procesando la consulta'),
+            "session_id": session_id,
+            "success": response.get('success', False),
+            "tools_used": response.get('tools_used', [])
+        }
+        
+    except Exception as e:
+        logger.error(f"❌ AI Agent chat error: {e}")
+        return {
+            "message": f"Disculpa, ocurrió un error procesando tu consulta: {str(e)}",
+            "success": False,
+            "error": str(e)
+        }
 
 @app.get("/vademecum-explorer")
 async def vademecum_explorer():

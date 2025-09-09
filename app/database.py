@@ -235,22 +235,47 @@ class PharmacyDatabase:
         return [pharmacy for pharmacy, distance in nearby_pharmacies]
 
     def find_by_comuna(self, comuna: str, only_open: bool = False) -> List[Pharmacy]:
-        """Find pharmacies in a specific commune"""
-        query = '''
+        """
+        Find pharmacies in a specific commune with enhanced matching
+        
+        First tries exact match, then falls back to partial match if needed
+        """
+        # Step 1: Try exact match first (most accurate)
+        query_exact = '''
             SELECT * FROM pharmacies
-            WHERE LOWER(comuna) LIKE LOWER(?)
+            WHERE UPPER(TRIM(comuna)) = UPPER(TRIM(?))
               AND lat != 0 AND lng != 0
         '''
-        params = [f'%{comuna}%']
+        params_exact = [comuna]
 
         if only_open:
-            query += " AND es_turno = 1"
+            query_exact += " AND es_turno = 1"
 
-        query += " ORDER BY nombre"
+        query_exact += " ORDER BY nombre"
 
         with sqlite3.connect(self.db_path) as conn:
             cursor = conn.cursor()
-            cursor.execute(query, params)
+            cursor.execute(query_exact, params_exact)
+            rows = cursor.fetchall()
+            
+            # If exact match found, return those results
+            if rows:
+                return [self._row_to_pharmacy(row) for row in rows]
+            
+            # Step 2: If no exact match, try partial match (fallback)
+            query_partial = '''
+                SELECT * FROM pharmacies
+                WHERE UPPER(comuna) LIKE UPPER(?)
+                  AND lat != 0 AND lng != 0
+            '''
+            params_partial = [f'%{comuna}%']
+
+            if only_open:
+                query_partial += " AND es_turno = 1"
+
+            query_partial += " ORDER BY nombre"
+
+            cursor.execute(query_partial, params_partial)
             rows = cursor.fetchall()
 
         return [self._row_to_pharmacy(row) for row in rows]
